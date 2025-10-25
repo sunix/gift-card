@@ -58,6 +58,7 @@ class GiftCardManager {
             name: cardName,
             initialBalance: initialBalance,
             currentBalance: initialBalance,
+            barcodeFormat: 'CODE128', // Default barcode format
             transactions: [{
                 date: new Date().toISOString(),
                 amount: initialBalance,
@@ -117,6 +118,22 @@ class GiftCardManager {
             <p><strong>Current Balance:</strong> <span class="text-success">€${card.currentBalance.toFixed(2)}</span></p>
             <p><strong>Initial Balance:</strong> €${card.initialBalance.toFixed(2)}</p>
 
+            <div class="barcode-settings">
+                <div class="form-group">
+                    <label for="barcodeFormat">Barcode Type:</label>
+                    <select id="barcodeFormat" class="barcode-format-select">
+                        <option value="CODE128" ${(card.barcodeFormat || 'CODE128') === 'CODE128' ? 'selected' : ''}>CODE 128</option>
+                        <option value="CODE39" ${card.barcodeFormat === 'CODE39' ? 'selected' : ''}>CODE 39</option>
+                        <option value="EAN13" ${card.barcodeFormat === 'EAN13' ? 'selected' : ''}>EAN-13</option>
+                        <option value="EAN8" ${card.barcodeFormat === 'EAN8' ? 'selected' : ''}>EAN-8</option>
+                        <option value="UPC" ${card.barcodeFormat === 'UPC' ? 'selected' : ''}>UPC</option>
+                        <option value="ITF14" ${card.barcodeFormat === 'ITF14' ? 'selected' : ''}>ITF-14</option>
+                        <option value="MSI" ${card.barcodeFormat === 'MSI' ? 'selected' : ''}>MSI</option>
+                        <option value="CODABAR" ${card.barcodeFormat === 'CODABAR' ? 'selected' : ''}>Codabar</option>
+                    </select>
+                </div>
+            </div>
+
             <div class="barcode-container">
                 <div id="barcode"></div>
             </div>
@@ -147,16 +164,31 @@ class GiftCardManager {
         `;
 
         // Generate barcode-style visual
-        try {
-            JsBarcode("#barcode", card.number, {
-                width: 2,
-                height: 100,
-                displayValue: true
-            });
-        } catch (e) {
-            console.error('Barcode generation failed:', e);
-            document.getElementById('barcode').innerHTML = '<p>Barcode could not be generated</p>';
-        }
+        const generateBarcode = () => {
+            const selectedFormat = document.getElementById('barcodeFormat').value;
+            try {
+                JsBarcode("#barcode", card.number, {
+                    width: 2,
+                    height: 100,
+                    displayValue: true,
+                    format: selectedFormat
+                });
+            } catch (e) {
+                console.error('Barcode generation failed:', e);
+                document.getElementById('barcode').innerHTML = '<p>Barcode could not be generated</p>';
+            }
+        };
+        
+        // Initial barcode generation
+        generateBarcode();
+        
+        // Set up barcode format change listener for dynamic updates
+        document.getElementById('barcodeFormat').addEventListener('change', (e) => {
+            const newFormat = e.target.value;
+            card.barcodeFormat = newFormat;
+            this.saveCards();
+            generateBarcode();
+        });
 
         // Set up transaction form
         document.getElementById('transactionForm').addEventListener('submit', (e) => {

@@ -241,6 +241,39 @@ h2 {
     height: auto;
 }
 
+.barcode-settings {
+    background: #f0f8ff;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 15px 0;
+    border: 2px solid #e0e0e0;
+}
+
+.barcode-settings .form-group {
+    margin-bottom: 0;
+}
+
+.barcode-format-select {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid var(--border-color);
+    border-radius: 5px;
+    font-size: 1rem;
+    background-color: white;
+    cursor: pointer;
+    transition: border-color 0.3s;
+}
+
+.barcode-format-select:focus {
+    outline: none;
+    border-color: var(--secondary-color);
+}
+
+.barcode-format-select:hover {
+    border-color: var(--secondary-color);
+}
+
+
 /* Transaction Form */
 .transaction-form {
     background: #f9f9f9;
