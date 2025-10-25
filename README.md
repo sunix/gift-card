@@ -96,7 +96,7 @@ On **Desktop** (Chrome, Edge, etc.):
 6. The card's balance updates automatically
 7. View the **transaction history** below with dates, amounts, and remaining balances
 
-![Recording transactions](screenshots/4-transaction-history.png)
+![Card details and transaction form](screenshots/3-card-detail.png)
 
 ### Step 4: Managing Barcodes
 Each card detail page displays a barcode generated from the card number:
@@ -119,7 +119,7 @@ Each card detail page displays a barcode generated from the card number:
 - **HTML5**: Structure and semantics
 - **CSS3**: Responsive styling with mobile-first approach
 - **Vanilla JavaScript**: Application logic (no frameworks needed)
-- **Canvas API**: Barcode-style visual generation
+- **bwip-js**: Barcode generation library for creating scannable barcodes
 - **LocalStorage API**: Data persistence
 - **Service Worker**: Offline functionality and caching
 - **Web App Manifest**: PWA installation support
