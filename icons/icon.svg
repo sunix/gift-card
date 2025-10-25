@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Background -->
+  <rect width="512" height="512" fill="#4CAF50" rx="64"/>
+  
+  <!-- Gift Card Shape -->
+  <rect x="64" y="128" width="384" height="256" fill="#fff" rx="24"/>
+  
+  <!-- Card Stripe -->
+  <rect x="64" y="176" width="384" height="48" fill="#2E7D32"/>
+  
+  <!-- Gift Icon -->
+  <g transform="translate(160, 240)">
+    <!-- Box -->
+    <rect x="32" y="48" width="128" height="96" fill="#FFC107" stroke="#F57C00" stroke-width="4"/>
+    <!-- Ribbon Vertical -->
+    <rect x="88" y="48" width="16" height="96" fill="#F57C00"/>
+    <!-- Ribbon Horizontal -->
+    <rect x="32" y="88" width="128" height="16" fill="#F57C00"/>
+    <!-- Bow -->
+    <ellipse cx="96" cy="48" rx="32" ry="16" fill="#E53935"/>
+    <ellipse cx="64" cy="48" rx="16" ry="16" fill="#E53935"/>
+    <ellipse cx="128" cy="48" rx="16" ry="16" fill="#E53935"/>
+  </g>
+</svg>
