@@ -21,6 +21,12 @@ const JsBarcode = (selector, value, options = {}) => {
         : selector;
     
     if (!element) return;
+    
+    // Safety check: ensure value is not empty
+    if (!value || value.toString().length === 0) {
+        element.innerHTML = '<p>Invalid barcode value</p>';
+        return;
+    }
 
     // Create canvas element
     const canvas = document.createElement('canvas');
