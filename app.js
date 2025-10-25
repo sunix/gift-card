@@ -146,10 +146,9 @@ class GiftCardManager {
             </div>
         `;
 
-        // Generate barcode
+        // Generate barcode-style visual
         try {
             JsBarcode("#barcode", card.number, {
-                format: "CODE128",
                 width: 2,
                 height: 100,
                 displayValue: true

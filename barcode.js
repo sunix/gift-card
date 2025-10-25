@@ -1,5 +1,8 @@
-// Simple Barcode Generator using Canvas
-// Generates Code 128 style barcodes
+// Simple Barcode-Style Visual Generator using Canvas
+// Creates a barcode-like visual representation based on the card number
+// Note: This generates decorative barcode-style images for visual identification,
+// not functional barcodes compliant with standards like CODE128 or EAN-13.
+// For production scanning requirements, use a library like JsBarcode or QuaggaJS.
 
 const JsBarcode = (selector, value, options = {}) => {
     const element = typeof selector === 'string' 
@@ -41,7 +44,8 @@ const JsBarcode = (selector, value, options = {}) => {
         x += barWidth * 2;
     }
     
-    // Data encoding (pseudo-random pattern based on characters)
+    // Data encoding (creates a visual pattern based on characters)
+    // This creates a decorative barcode-like image, not a standards-compliant scannable barcode
     chars.forEach((char, idx) => {
         const code = char.charCodeAt(0);
         seed = (seed + code) % 256;

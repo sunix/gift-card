@@ -36,14 +36,16 @@ Visit the live application at: `https://[your-username].github.io/gift-card/`
 5. View the updated balance and transaction history
 
 ### Viewing Barcodes
-Each card detail page displays a scannable barcode generated from the card number.
+Each card detail page displays a barcode-style visual representation generated from the card number.
+
+**Note:** The barcode visual is decorative and based on the card number. For production use with actual barcode scanning, consider integrating a proper barcode library like JsBarcode or QuaggaJS that implements standard barcode formats (CODE128, EAN-13, etc.).
 
 ## Technology Stack
 
 - **HTML5**: Structure and semantics
 - **CSS3**: Responsive styling with mobile-first approach
 - **Vanilla JavaScript**: Application logic (no frameworks needed)
-- **JsBarcode**: Barcode generation library
+- **Canvas API**: Barcode-style visual generation
 - **LocalStorage API**: Data persistence
 
 ## Browser Compatibility
