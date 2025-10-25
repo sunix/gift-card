@@ -11,6 +11,7 @@ A simple, static web application to manage your gift cards locally in your brows
 - 📷 **Barcode Generation**: Automatically generate barcodes from card numbers for easy scanning
 - 💾 **Local Storage**: All data stored securely in your browser's local storage
 - 🚀 **No Backend Required**: Pure static website, perfect for GitHub Pages
+- 📲 **Progressive Web App (PWA)**: Install on your device and use offline like a native app
 
 ## Usage
 
@@ -21,6 +22,24 @@ Visit the live application at: `https://[your-username].github.io/gift-card/`
 1. Clone this repository
 2. Open `index.html` in your web browser
 3. Start managing your gift cards!
+
+### Installing as a PWA
+On **Android**:
+1. Visit the live application URL in Chrome or Firefox
+2. Tap the menu (three dots) and select "Add to Home screen" or "Install app"
+3. The app will be installed on your device like a native app
+4. Launch it from your home screen anytime, even offline!
+
+On **iOS** (Safari):
+1. Visit the live application URL in Safari
+2. Tap the Share button (square with arrow pointing up)
+3. Scroll down and tap "Add to Home Screen"
+4. Tap "Add" to install the app
+
+On **Desktop** (Chrome, Edge, etc.):
+1. Visit the live application URL
+2. Look for the install icon in the address bar (or menu)
+3. Click "Install" to add the app to your system
 
 ### Adding a Gift Card
 1. Fill in the card number (e.g., 1234567890)
@@ -47,6 +66,8 @@ Each card detail page displays a barcode-style visual representation generated f
 - **Vanilla JavaScript**: Application logic (no frameworks needed)
 - **Canvas API**: Barcode-style visual generation
 - **LocalStorage API**: Data persistence
+- **Service Worker**: Offline functionality and caching
+- **Web App Manifest**: PWA installation support
 
 ## Browser Compatibility
 
@@ -54,6 +75,13 @@ Works on all modern browsers that support:
 - ES6 JavaScript
 - LocalStorage API
 - CSS3 Flexbox
+- Service Workers (for PWA features)
+- Web App Manifest (for PWA installation)
+
+Tested on:
+- Chrome/Edge (Android, iOS, Desktop)
+- Firefox (Android, Desktop)
+- Safari (iOS, macOS)
 
 ## Data Privacy
 
