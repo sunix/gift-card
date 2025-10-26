@@ -38,7 +38,7 @@ A simple, static web application to manage your gift cards locally in your brows
 ## Usage
 
 ### Live Demo
-Visit the live application at: `https://[your-username].github.io/gift-card/`
+Visit the live application at: [https://sunix.github.io/gift-card/](https://sunix.github.io/gift-card/)
 
 ### Running Locally
 1. Clone this repository
