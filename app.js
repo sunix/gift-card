@@ -31,8 +31,10 @@ class GiftCardManager {
                 const urlExt = url.pathname.split('.').pop().toLowerCase();
                 // Check if it's a valid image extension
                 if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(urlExt)) {
-                    // Build the downloaded file path by replacing .svg with the actual extension
-                    const downloadedPath = store.icon.replace('.svg', '.' + urlExt);
+                    // Build the downloaded file path by replacing the extension
+                    // Remove existing extension and add the new one
+                    const basePath = store.icon.replace(/\.[^.]+$/, '');
+                    const downloadedPath = basePath + '.' + urlExt;
                     // Return the downloaded path - browser will try this first
                     // If it doesn't exist, the image will fail to load and we need to handle that
                     return downloadedPath;
