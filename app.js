@@ -24,6 +24,23 @@ class GiftCardManager {
 
     // Get the icon path for a store (uses local fallback due to CORS)
     getStoreIcon(store) {
+        // If iconUrl is defined, derive the downloaded file extension
+        if (store.iconUrl) {
+            try {
+                const url = new URL(store.iconUrl);
+                const urlExt = url.pathname.split('.').pop().toLowerCase();
+                // Check if it's a valid image extension
+                if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(urlExt)) {
+                    // Build the downloaded file path by replacing .svg with the actual extension
+                    const downloadedPath = store.icon.replace('.svg', '.' + urlExt);
+                    // Return the downloaded path - browser will try this first
+                    // If it doesn't exist, the image will fail to load and we need to handle that
+                    return downloadedPath;
+                }
+            } catch (e) {
+                // Invalid URL, fall through to SVG fallback
+            }
+        }
         // Use local SVG fallback since external URLs typically have CORS restrictions
         return store.icon;
     }
@@ -159,7 +176,7 @@ class GiftCardManager {
 
         container.innerHTML = this.cards.map(card => {
             const store = this.matchStore(card.name);
-            const storeIcon = store ? `<img src="${this.escapeHtml(this.getStoreIcon(store))}" alt="${this.escapeHtml(store.name)}" style="width: 2rem; height: 2rem; margin-right: 10px; object-fit: contain;" />` : '';
+            const storeIcon = store ? `<img src="${this.escapeHtml(this.getStoreIcon(store))}" alt="${this.escapeHtml(store.name)}" onerror="this.src='${this.escapeHtml(store.icon)}'" style="width: 2rem; height: 2rem; margin-right: 10px; object-fit: contain;" />` : '';
             const cardStyle = store ? `border-left: 4px solid ${store.color};` : '';
             
             return `
@@ -193,7 +210,7 @@ class GiftCardManager {
         if (store) {
             content.innerHTML = `
                 <div class="store-header" style="background: ${store.background}; padding: 20px; margin: -30px -30px 20px -30px; border-radius: 10px 10px 0 0;">
-                    <div style="text-align: center; margin-bottom: 10px;"><img src="${this.escapeHtml(this.getStoreIcon(store))}" alt="${this.escapeHtml(store.name)}" style="width: 4rem; height: 4rem; object-fit: contain;" /></div>
+                    <div style="text-align: center; margin-bottom: 10px;"><img src="${this.escapeHtml(this.getStoreIcon(store))}" alt="${this.escapeHtml(store.name)}" onerror="this.src='${this.escapeHtml(store.icon)}'" style="width: 4rem; height: 4rem; object-fit: contain;" /></div>
                     <h2 style="text-align: center; color: white; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">${this.escapeHtml(card.name)}</h2>
                 </div>
                 <p><strong>Card Number:</strong> ${this.escapeHtml(card.number)}</p>
