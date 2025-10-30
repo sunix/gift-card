@@ -4,7 +4,9 @@
   "description": "A simple, static web application to manage your gift cards locally in your browser.",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "download-logos": "node download-logos.js",
+    "postinstall": "npm run download-logos"
   },
   "keywords": [],
   "author": "",
