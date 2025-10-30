@@ -150,7 +150,7 @@ class GiftCardManager {
 
         container.innerHTML = this.cards.map(card => {
             const store = this.matchStore(card.name);
-            const storeIcon = store ? `<span style="font-size: 1.5rem; margin-right: 10px;">${store.icon}</span>` : '';
+            const storeIcon = store ? `<img src="${this.escapeHtml(store.icon)}" alt="${this.escapeHtml(store.name)}" style="width: 2rem; height: 2rem; margin-right: 10px; object-fit: contain;" />` : '';
             const cardStyle = store ? `border-left: 4px solid ${store.color};` : '';
             
             return `
@@ -184,7 +184,7 @@ class GiftCardManager {
         if (store) {
             content.innerHTML = `
                 <div class="store-header" style="background: ${store.background}; padding: 20px; margin: -30px -30px 20px -30px; border-radius: 10px 10px 0 0;">
-                    <div style="font-size: 3rem; text-align: center; margin-bottom: 10px;">${store.icon}</div>
+                    <div style="text-align: center; margin-bottom: 10px;"><img src="${this.escapeHtml(store.icon)}" alt="${this.escapeHtml(store.name)}" style="width: 4rem; height: 4rem; object-fit: contain;" /></div>
                     <h2 style="text-align: center; color: white; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">${this.escapeHtml(card.name)}</h2>
                 </div>
                 <p><strong>Card Number:</strong> ${this.escapeHtml(card.number)}</p>
