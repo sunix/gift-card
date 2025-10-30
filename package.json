@@ -1,6 +1,6 @@
 {
   "name": "gift-card",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A simple, static web application to manage your gift cards locally in your browser.",
   "main": "app.js",
   "scripts": {
