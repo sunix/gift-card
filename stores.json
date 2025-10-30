@@ -10,7 +10,7 @@
   {
     "name": "Decathlon",
     "matchStrings": ["decathlon"],
-    "iconUrl": "https://www.decathlon.fr/render/android-icon-192x192.27bdddd4be30ecca32ed.png",
+    "iconUrl": "https://www.decathlon.media/vues/commun/img/commun/favicon/favicon-96x96.png",
     "icon": "store-logos/decathlon.svg",
     "color": "#0082C3",
     "background": "linear-gradient(135deg, #0082C3, #00A3E0)"
@@ -18,7 +18,7 @@
   {
     "name": "Leroy Merlin",
     "matchStrings": ["leroy merlin"],
-    "iconUrl": "https://static.captcha-delivery.com/captcha/assets/set/a0119e19d7f710c158729bc4153a6996e891b546/logo.png",
+    "iconUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a4/Leroy_Merlin_-_logo_%28France%2C_1995-%29.svg",
     "icon": "store-logos/leroy-merlin.svg",
     "color": "#78BE20",
     "background": "linear-gradient(135deg, #78BE20, #9CD954)"
