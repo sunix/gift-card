@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gift-card-manager-v2.0.0';
+const CACHE_NAME = 'gift-card-manager-v2.0.1';
 const urlsToCache = [
   './',
   './index.html',
