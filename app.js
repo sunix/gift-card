@@ -9,11 +9,41 @@ class GiftCardManager {
     async loadStores() {
         try {
             const response = await fetch('stores.json');
+            if (!response.ok) {
+                throw new Error(`Failed to fetch stores: ${response.status}`);
+            }
             this.stores = await response.json();
         } catch (error) {
             console.error('Failed to load stores configuration:', error);
             this.stores = [];
         }
+    }
+
+    // Escape HTML to prevent XSS in store data
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Sanitize CSS color value
+    sanitizeColor(color) {
+        // Only allow hex colors, rgb/rgba, and named colors
+        if (/^#[0-9A-Fa-f]{3,8}$/.test(color) || 
+            /^rgb\([\d\s,]+\)$/.test(color) || 
+            /^rgba\([\d\s,]+,[\d.]+\)$/.test(color)) {
+            return color;
+        }
+        return null; // Return null if invalid, will use default
+    }
+
+    // Sanitize CSS gradient background
+    sanitizeBackground(background) {
+        // Only allow linear-gradient with hex colors
+        if (/^linear-gradient\([\d\w\s,#().-]+\)$/.test(background)) {
+            return background;
+        }
+        return null;
     }
 
     // Match a card name to a store
