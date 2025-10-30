@@ -26,7 +26,7 @@
   {
     "name": "Picard",
     "matchStrings": ["picard"],
-    "iconUrl": "https://www.picard.fr/assets/images/logo.svg",
+    "iconUrl": "https://www.picard.fr/on/demandware.static/-/Sites-picard-Library/default/dwea50bc52/images/SFRA/SFRA_Logo_mobile.png",
     "icon": "store-logos/picard.svg",
     "color": "#00A651",
     "background": "linear-gradient(135deg, #00A651, #28B76D)"
@@ -34,7 +34,7 @@
   {
     "name": "Franprix",
     "matchStrings": ["franprix"],
-    "iconUrl": "https://www.franprix.fr/static/media/logo-franprix.svg",
+    "iconUrl": "https://www.franprix.fr/_nuxt/img/logo-round.7a3ba69.webp",
     "icon": "store-logos/franprix.svg",
     "color": "#E30613",
     "background": "linear-gradient(135deg, #E30613, #FF2D47)"
@@ -42,7 +42,7 @@
   {
     "name": "Fnac",
     "matchStrings": ["fnac"],
-    "iconUrl": "https://static.fnac-static.com/assets/logo-fnac.svg",
+    "iconUrl": "https://upload.wikimedia.org/wikipedia/commons/2/2e/Fnac_Logo.svg",
     "icon": "store-logos/fnac.svg",
     "color": "#F7C500",
     "background": "linear-gradient(135deg, #F7C500, #FFDC40)"
@@ -50,7 +50,7 @@
   {
     "name": "McDonald's",
     "matchStrings": ["mcdonald", "mac donald", "mcdo"],
-    "iconUrl": "https://www.mcdonalds.com/content/dam/sites/usa/nfl/icons/arches-logo_108x108.jpg",
+    "iconUrl": "https://fr.wikipedia.org/wiki/McDonald%27s#/media/Fichier:McDonald's_Golden_Arches.svg",
     "icon": "store-logos/mcdonalds.svg",
     "color": "#FFC72C",
     "background": "linear-gradient(135deg, #FFC72C, #FFD95A)"
@@ -58,7 +58,7 @@
   {
     "name": "Truffaut",
     "matchStrings": ["truffaut"],
-    "iconUrl": "https://www.truffaut.com/skin/frontend/truffaut/default/images/logo.svg",
+    "iconUrl": "https://images.sftcdn.net/images/t_app-icon-m/p/97d5dbad-6142-4e0b-9023-11901481f486/3306378717/truffaut-logo",
     "icon": "store-logos/truffaut.svg",
     "color": "#7CB342",
     "background": "linear-gradient(135deg, #7CB342, #9CCC65)"
@@ -66,7 +66,7 @@
   {
     "name": "E. Leclerc",
     "matchStrings": ["leclerc", "e.leclerc", "e leclerc"],
-    "iconUrl": "https://www.e.leclerc/img/logo-leclerc.svg",
+    "iconUrl": "https://upload.wikimedia.org/wikipedia/commons/e/ed/Logo_E.Leclerc_Sans_le_texte.svg",
     "icon": "store-logos/leclerc.svg",
     "color": "#005CA9",
     "background": "linear-gradient(135deg, #005CA9, #2196F3)"
