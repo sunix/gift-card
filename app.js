@@ -5,6 +5,11 @@ class GiftCardManager {
         this.stores = [];
     }
 
+    // Check if a card is a fidelity card (no balance tracking)
+    isFidelityCard(card) {
+        return card.currentBalance === null || card.currentBalance === undefined || card.currentBalance === 0;
+    }
+
     // Load stores configuration
     async loadStores() {
         try {
@@ -129,8 +134,8 @@ class GiftCardManager {
         const cardName = document.getElementById('cardName').value.trim();
         const initialBalanceValue = document.getElementById('initialBalance').value.trim();
         
-        // Check if this is a fidelity card (no balance) or a gift card (with balance)
-        const isFidelityCard = initialBalanceValue === '';
+        // Check if this is a fidelity card (no balance or 0 balance) or a gift card (with balance)
+        const isFidelityCard = initialBalanceValue === '' || parseFloat(initialBalanceValue) === 0;
         const initialBalance = isFidelityCard ? null : parseFloat(initialBalanceValue);
 
         // Check if card number already exists
@@ -187,8 +192,7 @@ class GiftCardManager {
             const cardStyle = store ? `border-left: 4px solid ${store.color};` : '';
             
             // Check if this is a fidelity card (no balance tracking)
-            const isFidelityCard = card.currentBalance === null || card.currentBalance === undefined;
-            const balanceDisplay = isFidelityCard 
+            const balanceDisplay = this.isFidelityCard(card)
                 ? '<span class="fidelity-badge" style="background: #9C27B0; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;">Fidelity Card</span>' 
                 : `<div class="card-balance" ${store ? `style="color: ${store.color};"` : ''}>€${card.currentBalance.toFixed(2)}</div>`;
             
@@ -214,9 +218,6 @@ class GiftCardManager {
         const card = this.cards.find(c => c.id === cardId);
         if (!card) return;
 
-        // Check if this is a fidelity card
-        const isFidelityCard = card.currentBalance === null || card.currentBalance === undefined;
-
         // Match store for theming
         const store = this.matchStore(card.name);
         
@@ -230,14 +231,14 @@ class GiftCardManager {
                     <h2 style="text-align: center; color: white; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">${this.escapeHtml(card.name)}</h2>
                 </div>
                 <p><strong>Card Number:</strong> ${this.escapeHtml(card.number)}</p>
-                ${isFidelityCard ? '<p><strong>Type:</strong> <span style="color: #9C27B0; font-weight: bold;">Fidelity Card</span></p>' : `<p><strong>Current Balance:</strong> <span style="color: ${store.color}; font-weight: bold;">€${card.currentBalance.toFixed(2)}</span></p>
+                ${this.isFidelityCard(card) ? '<p><strong>Type:</strong> <span style="color: #9C27B0; font-weight: bold;">Fidelity Card</span></p>' : `<p><strong>Current Balance:</strong> <span style="color: ${store.color}; font-weight: bold;">€${card.currentBalance.toFixed(2)}</span></p>
                 <p><strong>Initial Balance:</strong> €${card.initialBalance.toFixed(2)}</p>`}
             `;
         } else {
             content.innerHTML = `
                 <h2>${this.escapeHtml(card.name)}</h2>
                 <p><strong>Card Number:</strong> ${this.escapeHtml(card.number)}</p>
-                ${isFidelityCard ? '<p><strong>Type:</strong> <span style="color: #9C27B0; font-weight: bold;">Fidelity Card</span></p>' : `<p><strong>Current Balance:</strong> <span class="text-success">€${card.currentBalance.toFixed(2)}</span></p>
+                ${this.isFidelityCard(card) ? '<p><strong>Type:</strong> <span style="color: #9C27B0; font-weight: bold;">Fidelity Card</span></p>' : `<p><strong>Current Balance:</strong> <span class="text-success">€${card.currentBalance.toFixed(2)}</span></p>
                 <p><strong>Initial Balance:</strong> €${card.initialBalance.toFixed(2)}</p>`}
             `;
         }
@@ -263,7 +264,7 @@ class GiftCardManager {
                 <div id="barcode"></div>
             </div>
 
-            ${isFidelityCard ? '' : `<div class="transaction-form">
+            ${this.isFidelityCard(card) ? '' : `<div class="transaction-form">
                 <h3>Add Transaction</h3>
                 <form id="transactionForm">
                     <div class="form-group">
@@ -314,7 +315,7 @@ const generateBarcode = () => {
         });
 
         // Set up transaction form (only for gift cards with balance)
-        if (!isFidelityCard) {
+        if (!this.isFidelityCard(card)) {
             document.getElementById('transactionForm').addEventListener('submit', (e) => {
                 e.preventDefault();
                 this.addTransaction(cardId);
@@ -370,7 +371,7 @@ const generateBarcode = () => {
         if (!card) return;
 
         // Fidelity cards don't support transactions
-        if (card.currentBalance === null || card.currentBalance === undefined) {
+        if (this.isFidelityCard(card)) {
             alert('Transactions are not supported for fidelity cards.');
             return;
         }
