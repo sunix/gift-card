@@ -13,10 +13,43 @@ class GiftCardManager {
                 throw new Error(`Failed to fetch stores: ${response.status}`);
             }
             this.stores = await response.json();
+            // Initialize logo loading for each store
+            this.stores.forEach(store => {
+                this.loadStoreLogo(store);
+            });
         } catch (error) {
             console.error('Failed to load stores configuration:', error);
             this.stores = [];
         }
+    }
+
+    // Load store logo dynamically (try official URL, fallback to local SVG)
+    loadStoreLogo(store) {
+        if (!store.iconUrl) {
+            // No official URL, just use the fallback
+            return;
+        }
+
+        // Create a temporary image to test if the logo loads
+        const testImg = new Image();
+        testImg.onload = () => {
+            // Official logo loaded successfully, cache the path
+            store.loadedIcon = store.iconUrl;
+            console.log(`✓ Loaded official logo for ${store.name}`);
+        };
+        testImg.onerror = () => {
+            // Official logo failed, use fallback
+            store.loadedIcon = store.icon;
+            console.log(`✗ Using fallback logo for ${store.name}`);
+        };
+        // Set source to trigger loading (with CORS support)
+        testImg.crossOrigin = 'anonymous';
+        testImg.src = store.iconUrl;
+    }
+
+    // Get the icon path for a store (returns loaded icon or fallback)
+    getStoreIcon(store) {
+        return store.loadedIcon || store.icon;
     }
 
     // Escape HTML to prevent XSS in store data
@@ -150,7 +183,7 @@ class GiftCardManager {
 
         container.innerHTML = this.cards.map(card => {
             const store = this.matchStore(card.name);
-            const storeIcon = store ? `<img src="${this.escapeHtml(store.icon)}" alt="${this.escapeHtml(store.name)}" style="width: 2rem; height: 2rem; margin-right: 10px; object-fit: contain;" />` : '';
+            const storeIcon = store ? `<img src="${this.escapeHtml(this.getStoreIcon(store))}" alt="${this.escapeHtml(store.name)}" style="width: 2rem; height: 2rem; margin-right: 10px; object-fit: contain;" />` : '';
             const cardStyle = store ? `border-left: 4px solid ${store.color};` : '';
             
             return `
@@ -184,7 +217,7 @@ class GiftCardManager {
         if (store) {
             content.innerHTML = `
                 <div class="store-header" style="background: ${store.background}; padding: 20px; margin: -30px -30px 20px -30px; border-radius: 10px 10px 0 0;">
-                    <div style="text-align: center; margin-bottom: 10px;"><img src="${this.escapeHtml(store.icon)}" alt="${this.escapeHtml(store.name)}" style="width: 4rem; height: 4rem; object-fit: contain;" /></div>
+                    <div style="text-align: center; margin-bottom: 10px;"><img src="${this.escapeHtml(this.getStoreIcon(store))}" alt="${this.escapeHtml(store.name)}" style="width: 4rem; height: 4rem; object-fit: contain;" /></div>
                     <h2 style="text-align: center; color: white; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">${this.escapeHtml(card.name)}</h2>
                 </div>
                 <p><strong>Card Number:</strong> ${this.escapeHtml(card.number)}</p>
