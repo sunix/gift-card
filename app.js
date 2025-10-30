@@ -369,6 +369,12 @@ const generateBarcode = () => {
         const card = this.cards.find(c => c.id === cardId);
         if (!card) return;
 
+        // Fidelity cards don't support transactions
+        if (card.currentBalance === null || card.currentBalance === undefined) {
+            alert('Transactions are not supported for fidelity cards.');
+            return;
+        }
+
         const amount = parseFloat(document.getElementById('transactionAmount').value);
         const description = document.getElementById('transactionDescription').value.trim();
 
