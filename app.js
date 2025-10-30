@@ -13,43 +13,19 @@ class GiftCardManager {
                 throw new Error(`Failed to fetch stores: ${response.status}`);
             }
             this.stores = await response.json();
-            // Initialize logo loading for each store
-            this.stores.forEach(store => {
-                this.loadStoreLogo(store);
-            });
+            // Note: We use local SVG fallbacks by default due to CORS restrictions
+            // on external retailer websites. Users can manually download official
+            // logos and replace the SVG files if desired.
         } catch (error) {
             console.error('Failed to load stores configuration:', error);
             this.stores = [];
         }
     }
 
-    // Load store logo dynamically (try official URL, fallback to local SVG)
-    loadStoreLogo(store) {
-        if (!store.iconUrl) {
-            // No official URL, just use the fallback
-            return;
-        }
-
-        // Create a temporary image to test if the logo loads
-        const testImg = new Image();
-        testImg.onload = () => {
-            // Official logo loaded successfully, cache the path
-            store.loadedIcon = store.iconUrl;
-            console.log(`✓ Loaded official logo for ${store.name}`);
-        };
-        testImg.onerror = () => {
-            // Official logo failed, use fallback
-            store.loadedIcon = store.icon;
-            console.log(`✗ Using fallback logo for ${store.name}`);
-        };
-        // Set source to trigger loading (with CORS support)
-        testImg.crossOrigin = 'anonymous';
-        testImg.src = store.iconUrl;
-    }
-
-    // Get the icon path for a store (returns loaded icon or fallback)
+    // Get the icon path for a store (uses local fallback due to CORS)
     getStoreIcon(store) {
-        return store.loadedIcon || store.icon;
+        // Use local SVG fallback since external URLs typically have CORS restrictions
+        return store.icon;
     }
 
     // Escape HTML to prevent XSS in store data
