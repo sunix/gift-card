@@ -2,10 +2,35 @@
 class GiftCardManager {
     constructor() {
         this.cards = this.loadCards();
-        this.init();
+        this.stores = [];
     }
 
-    init() {
+    // Load stores configuration
+    async loadStores() {
+        try {
+            const response = await fetch('stores.json');
+            this.stores = await response.json();
+        } catch (error) {
+            console.error('Failed to load stores configuration:', error);
+            this.stores = [];
+        }
+    }
+
+    // Match a card name to a store
+    matchStore(cardName) {
+        if (!cardName) return null;
+        const lowerCardName = cardName.toLowerCase();
+        return this.stores.find(store => 
+            store.matchStrings.some(match => 
+                lowerCardName.includes(match.toLowerCase())
+            )
+        );
+    }
+
+    async init() {
+        // Load stores configuration first
+        await this.loadStores();
+        
         // Load cards on startup
         this.renderCards();
         
@@ -93,17 +118,26 @@ class GiftCardManager {
             return;
         }
 
-        container.innerHTML = this.cards.map(card => `
-            <div class="card" onclick="giftCardManager.showCardDetail('${card.id}')">
-                <div class="card-header">
-                    <div>
-                        <div class="card-name">${this.escapeHtml(card.name)}</div>
-                        <div class="card-number">Card #${this.escapeHtml(card.number)}</div>
+        container.innerHTML = this.cards.map(card => {
+            const store = this.matchStore(card.name);
+            const storeIcon = store ? `<span style="font-size: 1.5rem; margin-right: 10px;">${store.icon}</span>` : '';
+            const cardStyle = store ? `border-left: 4px solid ${store.color};` : '';
+            
+            return `
+                <div class="card" onclick="giftCardManager.showCardDetail('${card.id}')" style="${cardStyle}">
+                    <div class="card-header">
+                        <div style="display: flex; align-items: center;">
+                            ${storeIcon}
+                            <div>
+                                <div class="card-name">${this.escapeHtml(card.name)}</div>
+                                <div class="card-number">Card #${this.escapeHtml(card.number)}</div>
+                            </div>
+                        </div>
+                        <div class="card-balance" ${store ? `style="color: ${store.color};"` : ''}>€${card.currentBalance.toFixed(2)}</div>
                     </div>
-                    <div class="card-balance">€${card.currentBalance.toFixed(2)}</div>
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     // Show card detail modal
@@ -111,13 +145,32 @@ class GiftCardManager {
         const card = this.cards.find(c => c.id === cardId);
         if (!card) return;
 
+        // Match store for theming
+        const store = this.matchStore(card.name);
+        
         const content = document.getElementById('cardDetailContent');
-        content.innerHTML = `
-            <h2>${this.escapeHtml(card.name)}</h2>
-            <p><strong>Card Number:</strong> ${this.escapeHtml(card.number)}</p>
-            <p><strong>Current Balance:</strong> <span class="text-success">€${card.currentBalance.toFixed(2)}</span></p>
-            <p><strong>Initial Balance:</strong> €${card.initialBalance.toFixed(2)}</p>
-
+        
+        // Apply store theming if matched
+        if (store) {
+            content.innerHTML = `
+                <div class="store-header" style="background: ${store.background}; padding: 20px; margin: -30px -30px 20px -30px; border-radius: 10px 10px 0 0;">
+                    <div style="font-size: 3rem; text-align: center; margin-bottom: 10px;">${store.icon}</div>
+                    <h2 style="text-align: center; color: white; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">${this.escapeHtml(card.name)}</h2>
+                </div>
+                <p><strong>Card Number:</strong> ${this.escapeHtml(card.number)}</p>
+                <p><strong>Current Balance:</strong> <span style="color: ${store.color}; font-weight: bold;">€${card.currentBalance.toFixed(2)}</span></p>
+                <p><strong>Initial Balance:</strong> €${card.initialBalance.toFixed(2)}</p>
+            `;
+        } else {
+            content.innerHTML = `
+                <h2>${this.escapeHtml(card.name)}</h2>
+                <p><strong>Card Number:</strong> ${this.escapeHtml(card.number)}</p>
+                <p><strong>Current Balance:</strong> <span class="text-success">€${card.currentBalance.toFixed(2)}</span></p>
+                <p><strong>Initial Balance:</strong> €${card.initialBalance.toFixed(2)}</p>
+            `;
+        }
+        
+        content.innerHTML += `
             <div class="barcode-settings">
                 <div class="form-group">
                     <label for="barcodeFormat">Barcode Type:</label>
@@ -295,8 +348,9 @@ const generateBarcode = () => {
 
 // Initialize the app when DOM is loaded
 let giftCardManager;
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     giftCardManager = new GiftCardManager();
+    await giftCardManager.init();
     
     // Register service worker for PWA functionality
     if ('serviceWorker' in navigator) {

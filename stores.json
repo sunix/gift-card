@@ -1,0 +1,65 @@
+[
+  {
+    "name": "Magasins U",
+    "matchStrings": ["super u", "magasins u", "hyper u", "u express"],
+    "icon": "🛒",
+    "color": "#E30613",
+    "background": "linear-gradient(135deg, #E30613, #FF4757)"
+  },
+  {
+    "name": "Decathlon",
+    "matchStrings": ["decathlon"],
+    "icon": "⚽",
+    "color": "#0082C3",
+    "background": "linear-gradient(135deg, #0082C3, #00A3E0)"
+  },
+  {
+    "name": "Leroy Merlin",
+    "matchStrings": ["leroy merlin"],
+    "icon": "🔨",
+    "color": "#78BE20",
+    "background": "linear-gradient(135deg, #78BE20, #9CD954)"
+  },
+  {
+    "name": "Picard",
+    "matchStrings": ["picard"],
+    "icon": "❄️",
+    "color": "#00A651",
+    "background": "linear-gradient(135deg, #00A651, #28B76D)"
+  },
+  {
+    "name": "Franprix",
+    "matchStrings": ["franprix"],
+    "icon": "🥖",
+    "color": "#E30613",
+    "background": "linear-gradient(135deg, #E30613, #FF2D47)"
+  },
+  {
+    "name": "Fnac",
+    "matchStrings": ["fnac"],
+    "icon": "📚",
+    "color": "#F7C500",
+    "background": "linear-gradient(135deg, #F7C500, #FFDC40)"
+  },
+  {
+    "name": "McDonald's",
+    "matchStrings": ["mcdonald", "mac donald", "mcdo"],
+    "icon": "🍔",
+    "color": "#FFC72C",
+    "background": "linear-gradient(135deg, #FFC72C, #FFD95A)"
+  },
+  {
+    "name": "Truffaut",
+    "matchStrings": ["truffaut"],
+    "icon": "🌱",
+    "color": "#7CB342",
+    "background": "linear-gradient(135deg, #7CB342, #9CCC65)"
+  },
+  {
+    "name": "E. Leclerc",
+    "matchStrings": ["leclerc", "e.leclerc", "e leclerc"],
+    "icon": "🛍️",
+    "color": "#005CA9",
+    "background": "linear-gradient(135deg, #005CA9, #2196F3)"
+  }
+]
