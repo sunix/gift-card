@@ -127,7 +127,11 @@ class GiftCardManager {
     addCard() {
         const cardNumber = document.getElementById('cardNumber').value.trim();
         const cardName = document.getElementById('cardName').value.trim();
-        const initialBalance = parseFloat(document.getElementById('initialBalance').value);
+        const initialBalanceValue = document.getElementById('initialBalance').value.trim();
+        
+        // Check if this is a fidelity card (no balance) or a gift card (with balance)
+        const isFidelityCard = initialBalanceValue === '';
+        const initialBalance = isFidelityCard ? null : parseFloat(initialBalanceValue);
 
         // Check if card number already exists
         if (this.cards.find(card => card.number === cardNumber)) {
@@ -142,7 +146,7 @@ class GiftCardManager {
             initialBalance: initialBalance,
             currentBalance: initialBalance,
             barcodeFormat: 'CODE128', // Default barcode format
-            transactions: [{
+            transactions: isFidelityCard ? [] : [{
                 date: new Date().toISOString(),
                 amount: initialBalance,
                 type: 'initial',
@@ -160,7 +164,8 @@ class GiftCardManager {
         document.getElementById('addCardForm').reset();
 
         // Show success message
-        alert(`Gift card "${cardName}" added successfully!`);
+        const cardType = isFidelityCard ? 'Fidelity card' : 'Gift card';
+        alert(`${cardType} "${cardName}" added successfully!`);
     }
 
     // Render all cards
@@ -181,6 +186,12 @@ class GiftCardManager {
             const storeIcon = store ? `<img src="${this.escapeHtml(this.getStoreIcon(store))}" alt="${this.escapeHtml(store.name)}" onerror="this.src='${this.escapeHtml(store.icon)}'" style="width: 2rem; height: 2rem; margin-right: 10px; object-fit: contain;" />` : '';
             const cardStyle = store ? `border-left: 4px solid ${store.color};` : '';
             
+            // Check if this is a fidelity card (no balance tracking)
+            const isFidelityCard = card.currentBalance === null || card.currentBalance === undefined;
+            const balanceDisplay = isFidelityCard 
+                ? '<span class="fidelity-badge" style="background: #9C27B0; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;">Fidelity Card</span>' 
+                : `<div class="card-balance" ${store ? `style="color: ${store.color};"` : ''}>€${card.currentBalance.toFixed(2)}</div>`;
+            
             return `
                 <div class="card" onclick="giftCardManager.showCardDetail('${card.id}')" style="${cardStyle}">
                     <div class="card-header">
@@ -191,7 +202,7 @@ class GiftCardManager {
                                 <div class="card-number">Card #${this.escapeHtml(card.number)}</div>
                             </div>
                         </div>
-                        <div class="card-balance" ${store ? `style="color: ${store.color};"` : ''}>€${card.currentBalance.toFixed(2)}</div>
+                        ${balanceDisplay}
                     </div>
                 </div>
             `;
@@ -202,6 +213,9 @@ class GiftCardManager {
     showCardDetail(cardId) {
         const card = this.cards.find(c => c.id === cardId);
         if (!card) return;
+
+        // Check if this is a fidelity card
+        const isFidelityCard = card.currentBalance === null || card.currentBalance === undefined;
 
         // Match store for theming
         const store = this.matchStore(card.name);
@@ -216,15 +230,15 @@ class GiftCardManager {
                     <h2 style="text-align: center; color: white; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">${this.escapeHtml(card.name)}</h2>
                 </div>
                 <p><strong>Card Number:</strong> ${this.escapeHtml(card.number)}</p>
-                <p><strong>Current Balance:</strong> <span style="color: ${store.color}; font-weight: bold;">€${card.currentBalance.toFixed(2)}</span></p>
-                <p><strong>Initial Balance:</strong> €${card.initialBalance.toFixed(2)}</p>
+                ${isFidelityCard ? '<p><strong>Type:</strong> <span style="color: #9C27B0; font-weight: bold;">Fidelity Card</span></p>' : `<p><strong>Current Balance:</strong> <span style="color: ${store.color}; font-weight: bold;">€${card.currentBalance.toFixed(2)}</span></p>
+                <p><strong>Initial Balance:</strong> €${card.initialBalance.toFixed(2)}</p>`}
             `;
         } else {
             content.innerHTML = `
                 <h2>${this.escapeHtml(card.name)}</h2>
                 <p><strong>Card Number:</strong> ${this.escapeHtml(card.number)}</p>
-                <p><strong>Current Balance:</strong> <span class="text-success">€${card.currentBalance.toFixed(2)}</span></p>
-                <p><strong>Initial Balance:</strong> €${card.initialBalance.toFixed(2)}</p>
+                ${isFidelityCard ? '<p><strong>Type:</strong> <span style="color: #9C27B0; font-weight: bold;">Fidelity Card</span></p>' : `<p><strong>Current Balance:</strong> <span class="text-success">€${card.currentBalance.toFixed(2)}</span></p>
+                <p><strong>Initial Balance:</strong> €${card.initialBalance.toFixed(2)}</p>`}
             `;
         }
         
@@ -249,7 +263,7 @@ class GiftCardManager {
                 <div id="barcode"></div>
             </div>
 
-            <div class="transaction-form">
+            ${isFidelityCard ? '' : `<div class="transaction-form">
                 <h3>Add Transaction</h3>
                 <form id="transactionForm">
                     <div class="form-group">
@@ -267,7 +281,7 @@ class GiftCardManager {
             <div class="transaction-history">
                 <h3>Transaction History</h3>
                 ${this.renderTransactions(card)}
-            </div>
+            </div>`}
 
             <div class="mt-20">
                 <button class="btn btn-danger btn-small" onclick="giftCardManager.deleteCard('${card.id}')">Delete Card</button>
@@ -299,11 +313,13 @@ const generateBarcode = () => {
             generateBarcode();
         });
 
-        // Set up transaction form
-        document.getElementById('transactionForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.addTransaction(cardId);
-        });
+        // Set up transaction form (only for gift cards with balance)
+        if (!isFidelityCard) {
+            document.getElementById('transactionForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.addTransaction(cardId);
+            });
+        }
 
         // Show modal
         document.getElementById('cardDetailModal').style.display = 'block';
