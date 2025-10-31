@@ -34,7 +34,7 @@
   {
     "name": "Franprix",
     "matchStrings": ["franprix"],
-    "iconUrl": "https://www.franprix.fr/_nuxt/img/logo-round.7a3ba69.webp",
+    "iconUrl": "https://upload.wikimedia.org/wikipedia/commons/0/0d/Franprix_logo.svg",
     "icon": "store-logos/franprix.svg",
     "color": "#E30613",
     "background": "linear-gradient(135deg, #E30613, #FF2D47)"
