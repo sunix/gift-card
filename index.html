@@ -25,55 +25,133 @@
     
     <link rel="stylesheet" href="styles.css">
     
-    <!-- Inline Tailwind-inspired utility classes via style tag for navigation -->
+    <!-- Navigation styles -->
     <style>
-        /* Tailwind-inspired utility classes for navigation */
-        .nav-sticky { position: sticky; top: 0; z-index: 999; }
-        .nav-gradient { background: linear-gradient(135deg, #4CAF50, #2196F3); }
-        .nav-shadow { box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
-        .nav-mb { margin-bottom: 1.25rem; }
-        .nav-container { max-width: 1200px; margin: 0 auto; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; }
-        .nav-link-base { color: white; text-decoration: none; padding: 1rem 1.25rem; display: inline-block; font-weight: 600; font-size: 0.95rem; transition: all 0.3s; border-bottom: 4px solid transparent; }
-        .nav-link-base:hover { background-color: rgba(255, 255, 255, 0.15); border-bottom-color: white; }
-        .nav-link-base:active { transform: scale(0.95); }
-        .nav-text-hide { display: inline; }
-        
-        /* Mobile responsive - hide text labels on small screens, show only icons */
-        @media (max-width: 640px) {
-            .nav-link-base { padding: 0.75rem 1rem; font-size: 1.25rem; }
-            .nav-text-hide { display: none; }
+        /* Combined header and navigation bar */
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 999;
+            background: linear-gradient(135deg, #4CAF50, #2196F3);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            margin-bottom: 1.25rem;
         }
         
-        /* Tablet */
-        @media (min-width: 641px) and (max-width: 768px) {
-            .nav-link-base { padding: 0.875rem 1.125rem; font-size: 0.875rem; }
+        .navbar-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .navbar-title {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .navbar-menu {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 0.75rem 1rem;
+            display: inline-block;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+            border-radius: 5px;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+            border-bottom-color: white;
+        }
+        
+        .nav-link:active {
+            transform: scale(0.95);
+        }
+        
+        /* Hamburger menu button */
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.75rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            line-height: 1;
+        }
+        
+        .menu-toggle:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+            border-radius: 5px;
+        }
+        
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .navbar-container {
+                flex-wrap: wrap;
+            }
+            
+            .menu-toggle {
+                display: block;
+            }
+            
+            .navbar-menu {
+                display: none;
+                width: 100%;
+                flex-direction: column;
+                gap: 0;
+                margin-top: 1rem;
+            }
+            
+            .navbar-menu.active {
+                display: flex;
+            }
+            
+            .nav-link {
+                width: 100%;
+                text-align: center;
+                padding: 1rem;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 0;
+            }
+            
+            .nav-link:last-child {
+                border-bottom: none;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Navigation Bar with Tailwind-inspired responsive design -->
-    <nav class="nav-sticky nav-gradient nav-shadow nav-mb">
-        <div class="nav-container">
-            <a href="#introSection" class="nav-link-base">
-                📖 <span class="nav-text-hide">Introduction</span>
-            </a>
-            <a href="#cardsList" class="nav-link-base">
-                🎁 <span class="nav-text-hide">My Cards</span>
-            </a>
-            <a href="#addCardSection" class="nav-link-base">
-                ➕ <span class="nav-text-hide">Add Card</span>
-            </a>
-            <a href="#importExportSection" class="nav-link-base">
-                💾 <span class="nav-text-hide">Import/Export</span>
-            </a>
+    <!-- Combined Navigation Bar and Header -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <h1 class="navbar-title">🎁 Gift Card Manager</h1>
+            <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
+            <div class="navbar-menu" id="navbarMenu">
+                <a href="#introSection" class="nav-link">📖 Introduction</a>
+                <a href="#cardsList" class="nav-link">🎁 My Cards</a>
+                <a href="#addCardSection" class="nav-link">➕ Add Card</a>
+                <a href="#importExportSection" class="nav-link">💾 Import/Export</a>
+            </div>
         </div>
     </nav>
 
     <div class="container">
-        <header>
-            <h1>🎁 Gift Card Manager</h1>
-        </header>
-
         <main>
             <!-- Introduction/Presentation Section -->
             <section class="intro-section" id="introSection">
@@ -164,6 +242,25 @@
 <script src="https://cdn.jsdelivr.net/npm/bwip-js@3/dist/bwip-js.min.js"></script>
 <script src="barcode.js"></script>
 <script src="app.js"></script>
+
+<!-- Menu toggle script -->
+<script>
+    // Toggle mobile menu
+    document.getElementById('menuToggle').addEventListener('click', function() {
+        const menu = document.getElementById('navbarMenu');
+        menu.classList.toggle('active');
+    });
+    
+    // Close menu when clicking a link (for smooth navigation on mobile)
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', function() {
+            const menu = document.getElementById('navbarMenu');
+            if (menu.classList.contains('active')) {
+                menu.classList.remove('active');
+            }
+        });
+    });
+</script>
 
 </body>
 </html>

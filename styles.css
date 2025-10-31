@@ -32,6 +32,7 @@ html {
     padding: 20px;
 }
 
+/* Old header styles - now integrated into navbar
 header {
     background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
     color: white;
@@ -45,6 +46,7 @@ header {
 header h1 {
     font-size: 2rem;
 }
+*/
 
 section {
     background: var(--card-background);
