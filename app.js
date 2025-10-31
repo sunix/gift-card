@@ -103,6 +103,21 @@ class GiftCardManager {
             this.addCard();
         });
 
+        // Export button
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            this.exportData();
+        });
+
+        // Import button
+        document.getElementById('importBtn').addEventListener('click', () => {
+            document.getElementById('importFile').click();
+        });
+
+        // Import file input
+        document.getElementById('importFile').addEventListener('change', (e) => {
+            this.importData(e);
+        });
+
         // Modal close button
         document.querySelector('.close').addEventListener('click', () => {
             this.closeModal();
@@ -412,6 +427,131 @@ const generateBarcode = () => {
         this.saveCards();
         this.closeModal();
         this.renderCards();
+    }
+
+    // Export all data to JSON file
+    exportData() {
+        try {
+            // Create export data object with metadata
+            const exportData = {
+                version: '1.0',
+                exportDate: new Date().toISOString(),
+                cards: this.cards
+            };
+
+            // Convert to JSON
+            const jsonString = JSON.stringify(exportData, null, 2);
+            
+            // Create blob
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            
+            // Generate filename with date and time
+            const now = new Date();
+            // Format: YYYY-MM-DDTHH-MM-SS (remove milliseconds and timezone, replace separators)
+            const dateStr = now.toISOString().split('.')[0].replace(/:/g, '-');
+            const filename = `gift-cards-backup-${dateStr}.json`;
+            
+            // Create download link
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            
+            // Cleanup
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            alert(`Data exported successfully to ${filename}`);
+        } catch (error) {
+            console.error('Export error:', error);
+            alert('Failed to export data. Please try again.');
+        }
+    }
+
+    // Import data from JSON file
+    importData(event) {
+        const file = event.target.files[0];
+        if (!file) {
+            return;
+        }
+
+        const reader = new FileReader();
+        
+        reader.onload = (e) => {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                
+                // Validate imported data structure
+                if (!importedData.cards || !Array.isArray(importedData.cards)) {
+                    throw new Error('Invalid data format: missing cards array');
+                }
+
+                // Validate each card has required fields with proper types
+                for (const card of importedData.cards) {
+                    // Check for required fields and their types
+                    if (!card.id || typeof card.id !== 'string' || card.id.trim() === '') {
+                        throw new Error('Invalid card data: id must be a non-empty string');
+                    }
+                    if (!card.number || typeof card.number !== 'string' || card.number.trim() === '') {
+                        throw new Error('Invalid card data: number must be a non-empty string');
+                    }
+                    if (!card.name || typeof card.name !== 'string' || card.name.trim() === '') {
+                        throw new Error('Invalid card data: name must be a non-empty string');
+                    }
+                    if (!Array.isArray(card.transactions)) {
+                        throw new Error('Invalid card data: transactions must be an array');
+                    }
+                    // Validate balance fields (can be null for fidelity cards, or numbers for gift cards)
+                    if (card.initialBalance !== null && card.initialBalance !== undefined && typeof card.initialBalance !== 'number') {
+                        throw new Error('Invalid card data: initialBalance must be null or a number');
+                    }
+                    if (card.currentBalance !== null && card.currentBalance !== undefined && typeof card.currentBalance !== 'number') {
+                        throw new Error('Invalid card data: currentBalance must be null or a number');
+                    }
+                }
+
+                // Ask for confirmation before overwriting
+                const currentCount = this.cards.length;
+                const importCount = importedData.cards.length;
+                const confirmMessage = `This will replace all current data (${currentCount} cards) with imported data (${importCount} cards). Continue?`;
+                if (!confirm(confirmMessage)) {
+                    // Reset file input
+                    event.target.value = '';
+                    return;
+                }
+
+                // Import the data
+                this.cards = importedData.cards;
+                this.saveCards();
+                this.renderCards();
+                
+                // Format success message with export date if available and valid
+                let exportDateStr = 'backup';
+                if (importedData.exportDate) {
+                    const exportDate = new Date(importedData.exportDate);
+                    // Check if the date is valid
+                    if (!isNaN(exportDate.getTime())) {
+                        exportDateStr = exportDate.toLocaleString();
+                    }
+                }
+                alert(`Successfully imported ${importCount} card(s) from ${exportDateStr}`);
+            } catch (error) {
+                console.error('Import error:', error);
+                alert(`Failed to import data: ${error.message}`);
+            } finally {
+                // Reset file input so the same file can be selected again
+                event.target.value = '';
+            }
+        };
+        
+        reader.onerror = () => {
+            alert('Failed to read file. Please try again.');
+            event.target.value = '';
+        };
+        
+        reader.readAsText(file);
     }
 
     // Close modal
