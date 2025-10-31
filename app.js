@@ -94,6 +94,9 @@ class GiftCardManager {
         // Load stores configuration first
         await this.loadStores();
         
+        // Handle introduction section positioning
+        this.positionIntroSection();
+        
         // Load cards on startup
         this.renderCards();
         
@@ -130,6 +133,23 @@ class GiftCardManager {
                 this.closeModal();
             }
         });
+    }
+
+    // Position intro section based on first visit
+    positionIntroSection() {
+        const hasVisited = localStorage.getItem('hasVisited');
+        const introSection = document.getElementById('introSection');
+        const main = document.querySelector('main');
+        
+        if (!hasVisited) {
+            // First visit: intro section stays at top (already positioned in HTML)
+            localStorage.setItem('hasVisited', 'true');
+        } else {
+            // Subsequent visits: move intro section to the bottom
+            if (introSection && main) {
+                main.appendChild(introSection);
+            }
+        }
     }
 
     // Load cards from localStorage
