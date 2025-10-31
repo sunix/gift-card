@@ -137,18 +137,24 @@ class GiftCardManager {
 
     // Position intro section based on first visit
     positionIntroSection() {
-        const hasVisited = localStorage.getItem('hasVisited');
-        const introSection = document.getElementById('introSection');
-        const main = document.querySelector('main');
-        
-        if (!hasVisited) {
-            // First visit: intro section stays at top (already positioned in HTML)
-            localStorage.setItem('hasVisited', 'true');
-        } else {
-            // Subsequent visits: move intro section to the bottom
-            if (introSection && main) {
-                main.appendChild(introSection);
+        try {
+            const hasVisited = localStorage.getItem('hasVisited');
+            const introSection = document.getElementById('introSection');
+            const main = document.querySelector('main');
+            
+            if (!hasVisited) {
+                // First visit: intro section stays at top (already positioned in HTML)
+                localStorage.setItem('hasVisited', 'true');
+            } else {
+                // Subsequent visits: move intro section to the bottom
+                if (introSection && main) {
+                    main.appendChild(introSection);
+                }
             }
+        } catch (error) {
+            // Handle localStorage errors (e.g., private browsing mode, storage full)
+            console.warn('Unable to access localStorage for intro positioning:', error);
+            // Default behavior: keep intro section at top if localStorage fails
         }
     }
 
