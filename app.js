@@ -447,7 +447,9 @@ const generateBarcode = () => {
             
             // Generate filename with date and time
             const now = new Date();
-            const dateStr = now.toISOString().replace(/[:.]/g, '-').slice(0, -5); // Format: YYYY-MM-DDTHH-MM-SS
+            // Remove milliseconds and 'Z' from ISO string, replace colons and periods with hyphens
+            // Format: YYYY-MM-DDTHH-MM-SS
+            const dateStr = now.toISOString().replace(/[:.]/g, '-').slice(0, -5);
             const filename = `gift-cards-backup-${dateStr}.json`;
             
             // Create download link
@@ -487,10 +489,17 @@ const generateBarcode = () => {
                     throw new Error('Invalid data format: missing cards array');
                 }
 
-                // Validate each card has required fields
+                // Validate each card has required fields with proper types
                 for (const card of importedData.cards) {
-                    if (!card.id || !card.number || !card.name) {
-                        throw new Error('Invalid card data: missing required fields');
+                    // Check for required fields and their types
+                    if (!card.id || typeof card.id !== 'string' || card.id.trim() === '') {
+                        throw new Error('Invalid card data: id must be a non-empty string');
+                    }
+                    if (!card.number || typeof card.number !== 'string' || card.number.trim() === '') {
+                        throw new Error('Invalid card data: number must be a non-empty string');
+                    }
+                    if (!card.name || typeof card.name !== 'string' || card.name.trim() === '') {
+                        throw new Error('Invalid card data: name must be a non-empty string');
                     }
                     if (!Array.isArray(card.transactions)) {
                         throw new Error('Invalid card data: transactions must be an array');
@@ -498,7 +507,9 @@ const generateBarcode = () => {
                 }
 
                 // Ask for confirmation before overwriting
-                const confirmMessage = `This will replace all current data (${this.cards.length} cards) with imported data (${importedData.cards.length} cards). Continue?`;
+                const currentCount = this.cards.length;
+                const importCount = importedData.cards.length;
+                const confirmMessage = `This will replace all current data (${currentCount} cards) with imported data (${importCount} cards). Continue?`;
                 if (!confirm(confirmMessage)) {
                     // Reset file input
                     event.target.value = '';
@@ -510,7 +521,11 @@ const generateBarcode = () => {
                 this.saveCards();
                 this.renderCards();
                 
-                alert(`Successfully imported ${importedData.cards.length} card(s) from ${importedData.exportDate ? new Date(importedData.exportDate).toLocaleString() : 'backup'}`);
+                // Format success message with export date if available
+                const exportDateStr = importedData.exportDate 
+                    ? new Date(importedData.exportDate).toLocaleString() 
+                    : 'backup';
+                alert(`Successfully imported ${importCount} card(s) from ${exportDateStr}`);
             } catch (error) {
                 console.error('Import error:', error);
                 alert(`Failed to import data: ${error.message}`);
