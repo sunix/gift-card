@@ -6,36 +6,33 @@ A simple, static web application to manage your gift cards locally in your brows
 
 ## Features
 
-- ✨ **Add Gift Cards**: Create gift cards with custom names, numbers, and initial balances
-- 💰 **Track Balances**: Monitor current balance for each card
+- ✨ **Add Gift Cards & Fidelity Cards**: Create gift cards with balances or fidelity/loyalty cards without balances
+- 🏪 **Smart Store Recognition**: Automatically detects and brands cards from popular stores (Decathlon, Super U, Leroy Merlin, Fnac, and more) with custom logos and colors
+- 💰 **Track Balances**: Monitor current balance for each card with transaction history
 - 📊 **Transaction History**: Keep detailed history of all spending with dates and remaining balances
+- 🗂️ **Archive Cards**: Archive unused cards to keep your active list organized, with easy access to view archived cards
+- 🔄 **Drag & Drop Reordering**: Easily reorder your cards by dragging and dropping them
 - 📱 **Mobile Friendly**: Responsive design that works on all devices
-- 📷 **Barcode Generation**: Automatically generate barcodes from card numbers for easy scanning
+- 📷 **Barcode Generation**: Automatically generate barcodes from card numbers in multiple formats (CODE128, CODE39, EAN-13, UPC, etc.)
+- 🌐 **Multi-language Support**: Available in English and French with easy language switching
 - 💾 **Local Storage**: All data stored securely in your browser's local storage
+- 📥 **Import/Export**: Backup and restore your data with JSON export/import functionality
 - 🚀 **No Backend Required**: Pure static website, perfect for GitHub Pages
 - 📲 **Progressive Web App (PWA)**: Install on your device and use offline like a native app
 
 ## Screenshots
 
 ### Main Interface
-![Main Page](screenshots/1-main-page.png)
-*The clean and intuitive main interface where you can add new gift cards*
+![Main Page](https://github.com/user-attachments/assets/3aab18fd-1958-42c2-8374-1f73dd39c8e7)
+*The clean and intuitive main interface with smart store recognition and support for both gift cards and fidelity cards*
 
-### Gift Card List
-![Card List](screenshots/2-card-list.png)
-*View all your gift cards with current balances at a glance*
+### Gift Card List with Store Branding
+![Card List](https://github.com/user-attachments/assets/b839db8f-0fa6-4267-abfc-b718dcf14eb8)
+*View all your cards with automatic store logos, colors, and distinction between gift cards (with balance) and fidelity cards*
 
 ### Card Details & Barcode
-![Card Detail](screenshots/3-card-detail.png)
-*Detailed view with barcode generation and transaction management*
-
-### Transaction History
-![Transaction History](screenshots/4-transaction-history.png)
-*Track all your spending with detailed transaction history*
-
-### Mobile Responsive
-![Mobile View](screenshots/5-mobile-view.png)
-*Fully responsive design works perfectly on mobile devices*
+![Card Detail](https://github.com/user-attachments/assets/5d32378c-f9af-4301-9d0b-36279bcd36a6)
+*Detailed view with store branding, barcode generation in multiple formats, and transaction management*
 
 ## Usage
 
@@ -67,38 +64,36 @@ On **Desktop** (Chrome, Edge, etc.):
 
 ## How to Use the App
 
-### Step 1: Adding a Gift Card
+### Step 1: Adding a Gift Card or Fidelity Card
 1. **Fill in the card details** in the "Add New Gift Card" form:
-   - **Card Number**: Enter your gift card number (e.g., 1234567890123)
-   - **Card Name**: Give it a friendly name (e.g., "Amazon Gift Card", "Starbucks Card")
-   - **Initial Balance**: Enter the current balance in euros
-2. **Click "Add Card"** to save the gift card
-3. Your card will appear in the "My Gift Cards" section below
+   - **Card Number**: Enter your gift card or fidelity card number (e.g., 1234567890123)
+   - **Card Name**: Give it a friendly name (e.g., "Amazon Gift Card", "Decathlon Fidelity")
+   - **Initial Balance**: Enter the current balance in euros (leave empty or 0 for fidelity cards)
+2. **Click "Add Card"** to save the card
+3. Your card will appear in the "My Gift Cards" section with:
+   - **Automatic store recognition**: Cards from recognized stores (Decathlon, Super U, Leroy Merlin, Fnac, etc.) will display with custom branding and colors
+   - **Card type badge**: Fidelity cards (without balance) show a purple "Fidelity Card" badge, while gift cards show their balance
 
-![Adding a card](screenshots/1-main-page.png)
-
-### Step 2: Viewing Your Gift Cards
-- All your gift cards are displayed in the "My Gift Cards" section
-- Each card shows:
-  - Card name
-  - Card number
-  - Current balance in euros
+### Step 2: Viewing and Organizing Your Cards
+- All your cards are displayed in the "My Gift Cards" section
+- **Store branding**: Recognized stores show their logo and custom colors automatically
+- **Drag & Drop**: Click and drag cards to reorder them according to your preference
+- **Card types**: 
+  - Gift cards display their current balance in euros
+  - Fidelity cards show a "Fidelity Card" badge instead of a balance
 - Click on any card to view its details
 
-![Gift card list](screenshots/2-card-list.png)
-
-### Step 3: Recording Transactions
+### Step 3: Recording Transactions (Gift Cards Only)
 1. **Click on a gift card** to open the detail modal
-2. **Select barcode type** from the dropdown (CODE128, CODE39, EAN-13, etc.)
-3. **View the barcode** generated for your card number
-4. In the "Add Transaction" section:
+2. **View the barcode** and **select barcode type** from the dropdown (CODE128, CODE39, EAN-13, etc.)
+3. In the "Add Transaction" section:
    - Enter the **amount spent** (e.g., 25.50)
    - Optionally add a **description** (e.g., "Coffee and lunch")
-5. **Click "Record Transaction"** to save
-6. The card's balance updates automatically
-7. View the **transaction history** below with dates, amounts, and remaining balances
+4. **Click "Record Transaction"** to save
+5. The card's balance updates automatically
+6. View the **transaction history** below with dates, amounts, and remaining balances
 
-![Card details and transaction form](screenshots/3-card-detail.png)
+**Note**: Fidelity cards don't have balance tracking, so transaction features are not available for them.
 
 ### Step 4: Managing Barcodes
 Each card detail page displays a barcode generated from the card number:
@@ -109,7 +104,20 @@ Each card detail page displays a barcode generated from the card number:
 
 **Note:** The barcode is generated using the bwip-js library and implements standard barcode formats. You can use these barcodes for scanning at stores.
 
-### Step 5: Deleting a Card
+### Step 5: Archiving Cards
+Keep your active card list organized by archiving cards you no longer use regularly:
+1. Open the card detail modal
+2. Click the **"Archive Card"** button
+3. The card moves to the archived section
+4. Access archived cards anytime by clicking the "View Archived Cards" link
+5. Unarchive a card by opening it and clicking **"Unarchive Card"**
+
+### Step 6: Changing Language
+1. Click the **"🌐 Language"** button in the top navigation
+2. Select your preferred language (English or Français)
+3. The interface updates immediately
+
+### Step 7: Deleting a Card
 1. Open the card detail modal
 2. Scroll to the bottom
 3. Click "Delete Card" button
@@ -119,12 +127,29 @@ Each card detail page displays a barcode generated from the card number:
 ## Technology Stack
 
 - **HTML5**: Structure and semantics
-- **CSS3**: Responsive styling with mobile-first approach
-- **Vanilla JavaScript**: Application logic (no frameworks needed)
-- **bwip-js**: Barcode generation library for creating scannable barcodes
-- **LocalStorage API**: Data persistence
-- **Service Worker**: Offline functionality and caching
-- **Web App Manifest**: PWA installation support
+- **CSS3**: Responsive styling with mobile-first approach and custom store branding
+- **Vanilla JavaScript**: Application logic with ES6+ features (no frameworks needed)
+- **bwip-js**: Barcode generation library for creating scannable barcodes in multiple formats
+- **LocalStorage API**: Data persistence for cards, transactions, and preferences
+- **Service Worker**: Offline functionality and caching for PWA features
+- **Web App Manifest**: PWA installation support for mobile and desktop
+- **i18n System**: Multi-language support with dynamic translation loading
+
+## Supported Stores
+
+The app automatically recognizes and brands cards from the following stores:
+
+- 🏪 **Magasins U** (Super U, Hyper U, U Express)
+- 🏃 **Decathlon** - Sports equipment and apparel
+- 🔨 **Leroy Merlin** - Home improvement
+- 🍕 **Picard** - Frozen foods
+- 🛒 **Franprix** - Supermarket
+- 📚 **Fnac** - Books, electronics, and entertainment
+- 🍔 **McDonald's** - Fast food
+- 🌱 **Truffaut** - Garden center
+- 🛍️ **E. Leclerc** - Supermarket
+
+Each recognized store displays with its custom logo and brand colors. You can add more stores by editing the `stores.json` file.
 
 ## Browser Compatibility
 
