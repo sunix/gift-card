@@ -1,5 +1,5 @@
 {
-  "app.title": "Gestionnaire de Cartes Cadeaux",
+  "app.title": "My Gift Cards",
   "nav.introduction": "📖 Introduction",
   "nav.my_cards": "🎁 Mes Cartes",
   "nav.add_card": "➕ Ajouter",
@@ -7,7 +7,7 @@
   "nav.language": "🌐 Langue",
   "nav.archived_cards": "📦 Cartes Archivées",
   
-  "intro.welcome": "👋 Bienvenue dans le Gestionnaire de Cartes Cadeaux !",
+  "intro.welcome": "👋 Bienvenue dans My Gift Cards !",
   "intro.description": "Gérez toutes vos cartes cadeaux et cartes de fidélité en un seul endroit, directement dans votre navigateur. Vos données restent privées et sécurisées sur votre appareil.",
   "intro.add_cards_title": "Ajouter des Cartes",
   "intro.add_cards_desc": "Stockez des cartes cadeaux et cartes de fidélité avec leurs numéros et soldes",

@@ -1,5 +1,5 @@
 {
-  "app.title": "Gift Card Manager",
+  "app.title": "My Gift Cards",
   "nav.introduction": "📖 Introduction",
   "nav.my_cards": "🎁 My Cards",
   "nav.add_card": "➕ Add Card",
@@ -7,7 +7,7 @@
   "nav.language": "🌐 Language",
   "nav.archived_cards": "📦 Archived Cards",
   
-  "intro.welcome": "👋 Welcome to Gift Card Manager!",
+  "intro.welcome": "👋 Welcome to My Gift Cards!",
   "intro.description": "Manage all your gift cards and fidelity cards in one place, right in your browser. Your data stays private and secure on your device.",
   "intro.add_cards_title": "Add Cards",
   "intro.add_cards_desc": "Store gift cards and fidelity cards with card numbers and balances",
