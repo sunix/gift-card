@@ -447,9 +447,8 @@ const generateBarcode = () => {
             
             // Generate filename with date and time
             const now = new Date();
-            // Remove milliseconds and 'Z' from ISO string, replace colons and periods with hyphens
-            // Format: YYYY-MM-DDTHH-MM-SS
-            const dateStr = now.toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            // Format: YYYY-MM-DDTHH-MM-SS (remove milliseconds and timezone, replace separators)
+            const dateStr = now.toISOString().split('.')[0].replace(/:/g, '-');
             const filename = `gift-cards-backup-${dateStr}.json`;
             
             // Create download link
@@ -504,6 +503,13 @@ const generateBarcode = () => {
                     if (!Array.isArray(card.transactions)) {
                         throw new Error('Invalid card data: transactions must be an array');
                     }
+                    // Validate balance fields (can be null for fidelity cards, or numbers for gift cards)
+                    if (card.initialBalance !== null && card.initialBalance !== undefined && typeof card.initialBalance !== 'number') {
+                        throw new Error('Invalid card data: initialBalance must be null or a number');
+                    }
+                    if (card.currentBalance !== null && card.currentBalance !== undefined && typeof card.currentBalance !== 'number') {
+                        throw new Error('Invalid card data: currentBalance must be null or a number');
+                    }
                 }
 
                 // Ask for confirmation before overwriting
@@ -521,10 +527,15 @@ const generateBarcode = () => {
                 this.saveCards();
                 this.renderCards();
                 
-                // Format success message with export date if available
-                const exportDateStr = importedData.exportDate 
-                    ? new Date(importedData.exportDate).toLocaleString() 
-                    : 'backup';
+                // Format success message with export date if available and valid
+                let exportDateStr = 'backup';
+                if (importedData.exportDate) {
+                    const exportDate = new Date(importedData.exportDate);
+                    // Check if the date is valid
+                    if (!isNaN(exportDate.getTime())) {
+                        exportDateStr = exportDate.toLocaleString();
+                    }
+                }
                 alert(`Successfully imported ${importCount} card(s) from ${exportDateStr}`);
             } catch (error) {
                 console.error('Import error:', error);
