@@ -24,13 +24,134 @@
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
     
     <link rel="stylesheet" href="styles.css">
+    
+    <!-- Navigation styles -->
+    <style>
+        /* Combined header and navigation bar */
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 999;
+            background: linear-gradient(135deg, #4CAF50, #2196F3);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            margin-bottom: 1.25rem;
+        }
+        
+        .navbar-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .navbar-title {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .navbar-menu {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 0.75rem 1rem;
+            display: inline-block;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+            border-radius: 5px;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+            border-bottom-color: white;
+        }
+        
+        .nav-link:active {
+            transform: scale(0.95);
+        }
+        
+        /* Hamburger menu button */
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.75rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            line-height: 1;
+        }
+        
+        .menu-toggle:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+            border-radius: 5px;
+        }
+        
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .navbar-container {
+                flex-wrap: wrap;
+            }
+            
+            .menu-toggle {
+                display: block;
+            }
+            
+            .navbar-menu {
+                display: none;
+                width: 100%;
+                flex-direction: column;
+                gap: 0;
+                margin-top: 1rem;
+            }
+            
+            .navbar-menu.active {
+                display: flex;
+            }
+            
+            .nav-link {
+                width: 100%;
+                text-align: center;
+                padding: 1rem;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 0;
+            }
+            
+            .nav-link:last-child {
+                border-bottom: none;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🎁 Gift Card Manager</h1>
-        </header>
+    <!-- Combined Navigation Bar and Header -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <h1 class="navbar-title">🎁 Gift Card Manager</h1>
+            <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
+            <div class="navbar-menu" id="navbarMenu">
+                <a href="#introSection" class="nav-link">📖 Introduction</a>
+                <a href="#cardsList" class="nav-link">🎁 My Cards</a>
+                <a href="#addCardSection" class="nav-link">➕ Add Card</a>
+                <a href="#importExportSection" class="nav-link">💾 Import/Export</a>
+            </div>
+        </div>
+    </nav>
 
+    <div class="container">
         <main>
             <!-- Introduction/Presentation Section -->
             <section class="intro-section" id="introSection">
@@ -92,7 +213,7 @@
             </section>
 
             <!-- Import/Export Section -->
-            <section class="import-export-section">
+            <section class="import-export-section" id="importExportSection">
                 <h2>Data Management</h2>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <button id="exportBtn" class="btn btn-secondary">📥 Export All Data</button>
@@ -121,6 +242,25 @@
 <script src="https://cdn.jsdelivr.net/npm/bwip-js@3/dist/bwip-js.min.js"></script>
 <script src="barcode.js"></script>
 <script src="app.js"></script>
+
+<!-- Menu toggle script -->
+<script>
+    // Toggle mobile menu
+    document.getElementById('menuToggle').addEventListener('click', function() {
+        const menu = document.getElementById('navbarMenu');
+        menu.classList.toggle('active');
+    });
+    
+    // Close menu when clicking a link (for smooth navigation on mobile)
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', function() {
+            const menu = document.getElementById('navbarMenu');
+            if (menu.classList.contains('active')) {
+                menu.classList.remove('active');
+            }
+        });
+    });
+</script>
 
 </body>
 </html>
