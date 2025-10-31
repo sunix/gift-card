@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gift Card Manager</title>
+    <title data-i18n="app.title">Gift Card Manager</title>
     
     <!-- PWA Meta Tags -->
     <meta name="description" content="Manage your gift cards locally with barcode support">
@@ -83,6 +83,53 @@
             transform: scale(0.95);
         }
         
+        /* Language selector */
+        .language-selector {
+            position: relative;
+        }
+        
+        .language-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            margin-top: 0.5rem;
+            min-width: 150px;
+            overflow: hidden;
+            z-index: 1000;
+        }
+        
+        .language-dropdown.active {
+            display: block;
+        }
+        
+        .language-option {
+            display: block;
+            padding: 0.75rem 1rem;
+            color: #333;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: background-color 0.2s;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .language-option:last-child {
+            border-bottom: none;
+        }
+        
+        .language-option:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .language-option.active {
+            background-color: #e3f2fd;
+            color: #2196F3;
+        }
+        
         /* Hamburger menu button */
         .menu-toggle {
             display: none;
@@ -140,13 +187,20 @@
     <!-- Combined Navigation Bar and Header -->
     <nav class="navbar">
         <div class="navbar-container">
-            <h1 class="navbar-title">🎁 Gift Card Manager</h1>
+            <h1 class="navbar-title" data-i18n="app.title">🎁 Gift Card Manager</h1>
             <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
             <div class="navbar-menu" id="navbarMenu">
-                <a href="#introSection" class="nav-link">📖 Introduction</a>
-                <a href="#cardsList" class="nav-link">🎁 My Cards</a>
-                <a href="#addCardSection" class="nav-link">➕ Add Card</a>
-                <a href="#importExportSection" class="nav-link">💾 Import/Export</a>
+                <a href="#introSection" class="nav-link" data-i18n="nav.introduction">📖 Introduction</a>
+                <a href="#cardsList" class="nav-link" data-i18n="nav.my_cards">🎁 My Cards</a>
+                <a href="#addCardSection" class="nav-link" data-i18n="nav.add_card">➕ Add Card</a>
+                <a href="#importExportSection" class="nav-link" data-i18n="nav.import_export">💾 Import/Export</a>
+                <div class="language-selector" id="languageSelector">
+                    <button class="nav-link" id="languageButton" data-i18n="nav.language">🌐 Language</button>
+                    <div class="language-dropdown" id="languageDropdown">
+                        <a href="#" class="language-option" data-lang="en" data-i18n="language.english">English</a>
+                        <a href="#" class="language-option" data-lang="fr" data-i18n="language.french">Français</a>
+                    </div>
+                </div>
             </div>
         </div>
     </nav>
@@ -155,86 +209,86 @@
         <main>
             <!-- Introduction/Presentation Section -->
             <section class="intro-section" id="introSection">
-                <h2>👋 Welcome to Gift Card Manager!</h2>
-                <p>Manage all your gift cards and fidelity cards in one place, right in your browser. Your data stays private and secure on your device.</p>
+                <h2 data-i18n="intro.welcome">👋 Welcome to Gift Card Manager!</h2>
+                <p data-i18n="intro.description">Manage all your gift cards and fidelity cards in one place, right in your browser. Your data stays private and secure on your device.</p>
                 
                 <div class="intro-features">
                     <a href="#addCardSection" class="intro-feature" style="text-decoration: none; color: inherit; display: block;" aria-label="Navigate to Add Cards section">
                         <span class="feature-icon">🎁</span>
-                        <h3>Add Cards</h3>
-                        <p>Store gift cards and fidelity cards with card numbers and balances</p>
+                        <h3 data-i18n="intro.add_cards_title">Add Cards</h3>
+                        <p data-i18n="intro.add_cards_desc">Store gift cards and fidelity cards with card numbers and balances</p>
                     </a>
                     <div class="intro-feature">
                         <span class="feature-icon">📊</span>
-                        <h3>Track Spending</h3>
-                        <p>Record transactions and monitor your remaining balance</p>
+                        <h3 data-i18n="intro.track_spending_title">Track Spending</h3>
+                        <p data-i18n="intro.track_spending_desc">Record transactions and monitor your remaining balance</p>
                     </div>
                     <div class="intro-feature">
                         <span class="feature-icon">📱</span>
-                        <h3>Scan Barcodes</h3>
-                        <p>Generate barcodes from your card numbers for easy scanning</p>
+                        <h3 data-i18n="intro.scan_barcodes_title">Scan Barcodes</h3>
+                        <p data-i18n="intro.scan_barcodes_desc">Generate barcodes from your card numbers for easy scanning</p>
                     </div>
                     <div class="intro-feature">
                         <span class="feature-icon">💾</span>
-                        <h3>Local Storage</h3>
-                        <p>All data stored securely in your browser - no servers, no tracking</p>
+                        <h3 data-i18n="intro.local_storage_title">Local Storage</h3>
+                        <p data-i18n="intro.local_storage_desc">All data stored securely in your browser - no servers, no tracking</p>
                     </div>
                 </div>
                 
                 <p class="intro-cta">
-                    <strong>Get started by <a href="#addCardSection" class="nav-section-link">adding your first gift card</a>!</strong>
+                    <strong><span data-i18n="intro.cta">Get started by </span><a href="#addCardSection" class="nav-section-link" data-i18n="intro.cta_link">adding your first gift card</a>!</strong>
                 </p>
                 
                 <p class="intro-feedback" style="text-align: center; margin-top: 1rem; padding: 0.75rem; background-color: #f5f5f5; border-radius: 8px;">
-                    💬 <strong>Have feedback?</strong> <a href="https://github.com/sunix/gift-card/issues" target="_blank" rel="noopener noreferrer" style="color: #2196F3; text-decoration: none; font-weight: 600;">Report issues or request features</a> on our issue tracker!
+                    <span data-i18n="intro.feedback">💬 <strong>Have feedback?</strong> </span><a href="https://github.com/sunix/gift-card/issues" target="_blank" rel="noopener noreferrer" style="color: #2196F3; text-decoration: none; font-weight: 600;" data-i18n="intro.feedback_link">Report issues or request features</a><span data-i18n="intro.feedback_suffix"> on our issue tracker!</span>
                 </p>
             </section>
 
             <!-- Gift Cards List -->
             <section class="cards-list" id="cardsList">
-                <h2>My Gift Cards</h2>
+                <h2 data-i18n="cards.title">My Gift Cards</h2>
                 <div id="cardsContainer"></div>
             </section>
 
             <!-- Archived Cards Section -->
             <section class="cards-list" id="archivedCardsSection" style="display: none;">
-                <h2>📦 Archived Cards</h2>
-                <p style="color: #666; margin-bottom: 20px;">Cards that have been archived. You can unarchive or permanently delete them.</p>
+                <h2 data-i18n="archived.title">📦 Archived Cards</h2>
+                <p style="color: #666; margin-bottom: 20px;" data-i18n="archived.description">Cards that have been archived. You can unarchive or permanently delete them.</p>
                 <div id="archivedCardsContainer"></div>
                 <div style="text-align: center; margin-top: 20px;">
-                    <a href="#cardsList" class="nav-section-link" style="font-size: 1rem;">← Back to My Cards</a>
+                    <a href="#cardsList" class="nav-section-link" style="font-size: 1rem;" data-i18n="archived.back_link">← Back to My Cards</a>
                 </div>
             </section>
 
             <!-- Add New Card Section -->
             <section class="card-form" id="addCardSection">
-                <h2>Add New Gift Card</h2>
+                <h2 data-i18n="form.add_card_title">Add New Gift Card</h2>
                 <form id="addCardForm">
                     <div class="form-group">
-                        <label for="cardNumber">Card Number:</label>
-                        <input type="text" id="cardNumber" required placeholder="e.g., 1234567890">
+                        <label for="cardNumber" data-i18n="form.card_number">Card Number:</label>
+                        <input type="text" id="cardNumber" required data-i18n-placeholder="form.card_number_placeholder" placeholder="e.g., 1234567890">
                     </div>
                     <div class="form-group">
-                        <label for="cardName">Card Name:</label>
-                        <input type="text" id="cardName" required placeholder="e.g., Amazon Gift Card">
+                        <label for="cardName" data-i18n="form.card_name">Card Name:</label>
+                        <input type="text" id="cardName" required data-i18n-placeholder="form.card_name_placeholder" placeholder="e.g., Amazon Gift Card">
                     </div>
                     <div class="form-group">
-                        <label for="initialBalance">Initial Balance (€) - Optional:</label>
-                        <input type="number" id="initialBalance" step="0.01" min="0" placeholder="Leave empty for fidelity card">
+                        <label for="initialBalance" data-i18n="form.initial_balance">Initial Balance (€) - Optional:</label>
+                        <input type="number" id="initialBalance" step="0.01" min="0" data-i18n-placeholder="form.initial_balance_placeholder" placeholder="Leave empty for fidelity card">
                     </div>
-                    <button type="submit" class="btn btn-primary">Add Card</button>
+                    <button type="submit" class="btn btn-primary" data-i18n="form.add_card_button">Add Card</button>
                 </form>
             </section>
 
             <!-- Import/Export Section -->
             <section class="import-export-section" id="importExportSection">
-                <h2>Data Management</h2>
+                <h2 data-i18n="export.title">Data Management</h2>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <button id="exportBtn" class="btn btn-secondary">📥 Export All Data</button>
-                    <button id="importBtn" class="btn btn-secondary">📤 Import Data</button>
+                    <button id="exportBtn" class="btn btn-secondary" data-i18n="export.export_button">📥 Export All Data</button>
+                    <button id="importBtn" class="btn btn-secondary" data-i18n="export.import_button">📤 Import Data</button>
                     <input type="file" id="importFile" accept=".json" style="display: none;">
                 </div>
-                <p style="margin-top: 10px; font-size: 0.9rem; color: #666;">Export your data as a backup or import previously exported data.</p>
+                <p style="margin-top: 10px; font-size: 0.9rem; color: #666;" data-i18n="export.description">Export your data as a backup or import previously exported data.</p>
             </section>
 
             <!-- Card Detail Modal -->
@@ -247,30 +301,86 @@
         </main>
         
         <footer style="margin-top: 2rem; padding: 1rem; text-align: center; font-size: 0.85rem; color: #666; border-top: 1px solid #e0e0e0;">
-            <p style="margin: 0.5rem 0;">Store logos and trademarks are the property of their respective owners.</p>
-            <p style="margin: 0.5rem 0;">This application uses store branding for identification purposes only and does not imply endorsement.</p>
-            <p style="margin: 0.5rem 0;" id="appVersion">Version: <span id="versionNumber">2.0.1</span></p>
+            <p style="margin: 0.5rem 0;" data-i18n="footer.disclaimer1">Store logos and trademarks are the property of their respective owners.</p>
+            <p style="margin: 0.5rem 0;" data-i18n="footer.disclaimer2">This application uses store branding for identification purposes only and does not imply endorsement.</p>
+            <p style="margin: 0.5rem 0;" id="appVersion"><span data-i18n="footer.version">Version: </span><span id="versionNumber">2.0.1</span></p>
         </footer>
     </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bwip-js@3/dist/bwip-js.min.js"></script>
+<script src="i18n.js"></script>
 <script src="barcode.js"></script>
 <script src="app.js"></script>
 
-<!-- Menu toggle script -->
+<!-- Menu toggle and language selector scripts -->
 <script>
-    // Toggle mobile menu
-    document.getElementById('menuToggle').addEventListener('click', function() {
-        const menu = document.getElementById('navbarMenu');
-        menu.classList.toggle('active');
-    });
-    
-    // Close menu when clicking a link (for smooth navigation on mobile)
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.addEventListener('click', function() {
+    document.addEventListener('DOMContentLoaded', function() {
+        // Toggle mobile menu
+        document.getElementById('menuToggle').addEventListener('click', function() {
             const menu = document.getElementById('navbarMenu');
-            if (menu.classList.contains('active')) {
-                menu.classList.remove('active');
+            menu.classList.toggle('active');
+        });
+        
+        // Close menu when clicking a link (for smooth navigation on mobile)
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function() {
+                const menu = document.getElementById('navbarMenu');
+                if (menu.classList.contains('active')) {
+                    menu.classList.remove('active');
+                }
+            });
+        });
+    });
+
+    // Language selector functionality
+    document.addEventListener('DOMContentLoaded', async function() {
+        const languageButton = document.getElementById('languageButton');
+        const languageDropdown = document.getElementById('languageDropdown');
+        const languageOptions = document.querySelectorAll('.language-option');
+
+        // Initialize i18n first
+        await i18n.init();
+        
+        // Signal that i18n is ready
+        window.dispatchEvent(new CustomEvent('i18nReady'));
+
+        // Update active language in dropdown
+        function updateActiveLanguage() {
+            const currentLang = i18n.getCurrentLanguage();
+            languageOptions.forEach(option => {
+                if (option.getAttribute('data-lang') === currentLang) {
+                    option.classList.add('active');
+                } else {
+                    option.classList.remove('active');
+                }
+            });
+        }
+
+        // Initial update
+        updateActiveLanguage();
+
+        // Toggle language dropdown
+        languageButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            languageDropdown.classList.toggle('active');
+        });
+
+        // Handle language selection
+        languageOptions.forEach(option => {
+            option.addEventListener('click', async function(e) {
+                e.preventDefault();
+                const lang = this.getAttribute('data-lang');
+                await i18n.changeLanguage(lang);
+                updateActiveLanguage();
+                languageDropdown.classList.remove('active');
+            });
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!languageButton.contains(e.target) && !languageDropdown.contains(e.target)) {
+                languageDropdown.classList.remove('active');
             }
         });
     });
