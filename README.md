@@ -2,6 +2,8 @@
 
 A simple, static web application to manage your gift cards locally in your browser.
 
+💬 **Have feedback?** [Report issues or request features](https://github.com/sunix/gift-card/issues) on our issue tracker!
+
 ## Features
 
 - ✨ **Add Gift Cards**: Create gift cards with custom names, numbers, and initial balances
