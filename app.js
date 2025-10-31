@@ -144,29 +144,30 @@ class GiftCardManager {
     // Handle navigation based on URL hash
     handleHashNavigation() {
         const hash = window.location.hash;
-        const archivedSection = document.getElementById('archivedCardsSection');
-        const cardsList = document.getElementById('cardsList');
-        const addCardSection = document.getElementById('addCardSection');
-        const importExportSection = document.getElementById('importExportSection');
-        const introSection = document.getElementById('introSection');
         
-        if (hash === '#archivedCardsSection') {
-            // Show archived cards, hide others
-            archivedSection.style.display = 'block';
-            cardsList.style.display = 'none';
-            addCardSection.style.display = 'none';
-            importExportSection.style.display = 'none';
-            introSection.style.display = 'none';
-            
-            // Render archived cards
+        // Define section visibility rules
+        const sections = {
+            'archivedCardsSection': { id: 'archivedCardsSection', visibleOn: ['#archivedCardsSection'] },
+            'cardsList': { id: 'cardsList', visibleOn: ['default'] },
+            'addCardSection': { id: 'addCardSection', visibleOn: ['default'] },
+            'importExportSection': { id: 'importExportSection', visibleOn: ['default'] },
+            'introSection': { id: 'introSection', visibleOn: ['default'] }
+        };
+        
+        // Determine current view
+        const currentView = hash === '#archivedCardsSection' ? '#archivedCardsSection' : 'default';
+        
+        // Update visibility for all sections
+        Object.values(sections).forEach(section => {
+            const element = document.getElementById(section.id);
+            if (element) {
+                element.style.display = section.visibleOn.includes(currentView) ? 'block' : 'none';
+            }
+        });
+        
+        // Render archived cards if on that view
+        if (currentView === '#archivedCardsSection') {
             this.renderArchivedCards();
-        } else {
-            // Show normal sections, hide archived
-            archivedSection.style.display = 'none';
-            cardsList.style.display = 'block';
-            addCardSection.style.display = 'block';
-            importExportSection.style.display = 'block';
-            introSection.style.display = 'block';
         }
     }
 
@@ -363,6 +364,14 @@ class GiftCardManager {
             `;
         }).join('');
     }
+    
+    // Helper method to update archived cards view if it's currently visible
+    updateArchivedViewIfVisible() {
+        const archivedSection = document.getElementById('archivedCardsSection');
+        if (archivedSection && archivedSection.style.display !== 'none') {
+            this.renderArchivedCards();
+        }
+    }
 
     // Archive a card
     archiveCard(cardId) {
@@ -373,12 +382,7 @@ class GiftCardManager {
         this.saveCards();
         this.closeModal();
         this.renderCards();
-        
-        // If on archived cards page, update that too
-        const archivedSection = document.getElementById('archivedCardsSection');
-        if (archivedSection) {
-            this.renderArchivedCards();
-        }
+        this.updateArchivedViewIfVisible();
     }
 
     // Unarchive a card
@@ -390,12 +394,7 @@ class GiftCardManager {
         this.saveCards();
         this.closeModal();
         this.renderCards();
-        
-        // If on archived cards page, update that too
-        const archivedSection = document.getElementById('archivedCardsSection');
-        if (archivedSection) {
-            this.renderArchivedCards();
-        }
+        this.updateArchivedViewIfVisible();
     }
 
     // Show card detail modal
@@ -601,12 +600,7 @@ const generateBarcode = () => {
         this.saveCards();
         this.closeModal();
         this.renderCards();
-        
-        // If on archived cards page, update that too
-        const archivedSection = document.getElementById('archivedCardsSection');
-        if (archivedSection && archivedSection.style.display !== 'none') {
-            this.renderArchivedCards();
-        }
+        this.updateArchivedViewIfVisible();
     }
 
     // Export all data to JSON file
