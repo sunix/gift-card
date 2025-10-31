@@ -135,7 +135,12 @@ class GiftCardManager {
         });
     }
 
-    // Position intro section based on first visit
+    /**
+     * Position the introduction section based on whether this is the user's first visit.
+     * On first visit: section stays at the top (as positioned in HTML)
+     * On subsequent visits: section is moved to the bottom of the main content
+     * Uses localStorage to track visit status with error handling for private browsing mode.
+     */
     positionIntroSection() {
         try {
             const hasVisited = localStorage.getItem('hasVisited');
