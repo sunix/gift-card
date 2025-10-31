@@ -282,7 +282,7 @@ class GiftCardManager {
         if (activeCards.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
-                    <p><span data-i18n="cards.empty">${i18n.t('cards.empty')}</span><a href="#addCardSection" class="nav-section-link" data-i18n="cards.empty_link">${i18n.t('cards.empty_link')}</a>!</p>
+                    <p><span>${i18n.t('cards.empty')}</span><a href="#addCardSection" class="nav-section-link">${i18n.t('cards.empty_link')}</a>!</p>
                 </div>
             `;
             
@@ -308,7 +308,7 @@ class GiftCardManager {
     generateArchivedCardsLink(archivedCount) {
         return `
             <div style="text-align: center; margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
-                <a href="#archivedCardsSection" class="nav-section-link" style="font-size: 1rem; font-weight: 600;" data-i18n="cards.view_archived">
+                <a href="#archivedCardsSection" class="nav-section-link" style="font-size: 1rem; font-weight: 600;">
                     ${i18n.t('cards.view_archived', { count: archivedCount })}
                 </a>
             </div>
@@ -323,7 +323,7 @@ class GiftCardManager {
         
         // Check if this is a fidelity card (no balance tracking)
         const balanceDisplay = this.isFidelityCard(card)
-            ? `<span class="fidelity-badge" style="background: #9C27B0; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;" data-i18n="card.fidelity_badge">${i18n.t('card.fidelity_badge')}</span>` 
+            ? `<span class="fidelity-badge" style="background: #9C27B0; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;">${i18n.t('card.fidelity_badge')}</span>` 
             : `<div class="card-balance" ${store ? `style="color: ${store.color};"` : ''}>€${card.currentBalance.toFixed(2)}</div>`;
         
         return `
@@ -352,7 +352,7 @@ class GiftCardManager {
         if (archivedCards.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
-                    <p data-i18n="archived.empty">${i18n.t('archived.empty')}</p>
+                    <p>${i18n.t('archived.empty')}</p>
                 </div>
             `;
             return;

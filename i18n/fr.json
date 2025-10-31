@@ -64,9 +64,9 @@
   "card.delete_button": "Supprimer la Carte",
   "card.no_transactions": "Aucune transaction pour le moment.",
   
-  "transaction.initial_balance": "Solde Initial : {amount}€",
-  "transaction.spent": "Dépensé : {amount}€",
-  "transaction.balance_after": "Solde après : {amount}€",
+  "transaction.initial_balance": "Solde Initial : {amount} €",
+  "transaction.spent": "Dépensé : {amount} €",
+  "transaction.balance_after": "Solde après : {amount} €",
   
   "alert.card_exists": "Une carte avec ce numéro existe déjà !",
   "alert.fidelity_added": "Carte de fidélité \"{name}\" ajoutée avec succès !",
