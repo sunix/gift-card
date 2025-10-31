@@ -1,7 +1,7 @@
 {
   "name": "Gift Card Manager",
   "short_name": "Gift Cards",
-  "description": "Manage your gift cards locally with barcode support",
+  "description": "Manage gift cards and fidelity cards locally with barcode support, store recognition, and multi-language interface",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
