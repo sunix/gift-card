@@ -1,5 +1,5 @@
 {
-  "name": "Gift Card Manager",
+  "name": "My Gift Cards",
   "short_name": "Gift Cards",
   "description": "Manage your gift cards locally with barcode support",
   "start_url": "./index.html",
