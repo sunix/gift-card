@@ -1,5 +1,8 @@
 // Gift Card Manager Application
 class GiftCardManager {
+    // Constants
+    static DEFAULT_ARCHIVED_STATE = false;
+    
     constructor() {
         this.cards = this.loadCards();
         this.stores = [];
@@ -133,6 +136,42 @@ class GiftCardManager {
                 this.closeModal();
             }
         });
+        
+        // Handle hash changes for navigation to archived cards section
+        this.handleHashNavigation();
+        window.addEventListener('hashchange', () => {
+            this.handleHashNavigation();
+        });
+    }
+    
+    // Handle navigation based on URL hash
+    handleHashNavigation() {
+        const hash = window.location.hash;
+        
+        // Define section visibility rules
+        const sections = {
+            'archivedCardsSection': { id: 'archivedCardsSection', visibleOn: ['#archivedCardsSection'] },
+            'cardsList': { id: 'cardsList', visibleOn: ['default'] },
+            'addCardSection': { id: 'addCardSection', visibleOn: ['default'] },
+            'importExportSection': { id: 'importExportSection', visibleOn: ['default'] },
+            'introSection': { id: 'introSection', visibleOn: ['default'] }
+        };
+        
+        // Determine current view
+        const currentView = hash === '#archivedCardsSection' ? '#archivedCardsSection' : 'default';
+        
+        // Update visibility for all sections
+        Object.values(sections).forEach(section => {
+            const element = document.getElementById(section.id);
+            if (element) {
+                element.style.display = section.visibleOn.includes(currentView) ? 'block' : 'none';
+            }
+        });
+        
+        // Render archived cards if on that view
+        if (currentView === '#archivedCardsSection') {
+            this.renderArchivedCards();
+        }
     }
 
     /**
@@ -204,7 +243,8 @@ class GiftCardManager {
                 balanceAfter: initialBalance,
                 description: 'Initial balance'
             }],
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            archived: GiftCardManager.DEFAULT_ARCHIVED_STATE
         };
 
         this.cards.push(newCard);
@@ -223,40 +263,119 @@ class GiftCardManager {
     renderCards() {
         const container = document.getElementById('cardsContainer');
         
-        if (this.cards.length === 0) {
+        // Filter out archived cards
+        const activeCards = this.cards.filter(card => !card.archived);
+        const archivedCards = this.cards.filter(card => card.archived);
+        
+        if (activeCards.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
                     <p>No gift cards yet. <a href="#addCardSection" class="nav-section-link">Add your first card</a>!</p>
                 </div>
             `;
+            
+            // Still show link to archived cards if there are any
+            if (archivedCards.length > 0) {
+                container.innerHTML += this.generateArchivedCardsLink(archivedCards.length);
+            }
             return;
         }
 
-        container.innerHTML = this.cards.map(card => {
-            const store = this.matchStore(card.name);
-            const storeIcon = store ? `<img src="${this.escapeHtml(this.getStoreIcon(store))}" alt="${this.escapeHtml(store.name)}" onerror="this.src='${this.escapeHtml(store.icon)}'" style="width: 2rem; height: 2rem; margin-right: 10px; object-fit: contain;" />` : '';
-            const cardStyle = store ? `border-left: 4px solid ${store.color};` : '';
-            
-            // Check if this is a fidelity card (no balance tracking)
-            const balanceDisplay = this.isFidelityCard(card)
-                ? '<span class="fidelity-badge" style="background: #9C27B0; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;">Fidelity Card</span>' 
-                : `<div class="card-balance" ${store ? `style="color: ${store.color};"` : ''}>€${card.currentBalance.toFixed(2)}</div>`;
-            
-            return `
-                <div class="card" onclick="giftCardManager.showCardDetail('${card.id}')" style="${cardStyle}">
-                    <div class="card-header">
-                        <div style="display: flex; align-items: center;">
-                            ${storeIcon}
-                            <div>
-                                <div class="card-name">${this.escapeHtml(card.name)}</div>
-                                <div class="card-number">Card #${this.escapeHtml(card.number)}</div>
-                            </div>
+        container.innerHTML = activeCards.map(card => this.generateCardHTML(card)).join('');
+        
+        // Add link to archived cards if there are any
+        if (archivedCards.length > 0) {
+            container.innerHTML += this.generateArchivedCardsLink(archivedCards.length);
+        }
+    }
+    
+    // Helper method to generate archived cards link HTML
+    generateArchivedCardsLink(archivedCount) {
+        return `
+            <div style="text-align: center; margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                <a href="#archivedCardsSection" class="nav-section-link" style="font-size: 1rem; font-weight: 600;">
+                    📦 View Archived Cards (${archivedCount})
+                </a>
+            </div>
+        `;
+    }
+    
+    // Helper method to generate card HTML
+    generateCardHTML(card) {
+        const store = this.matchStore(card.name);
+        const storeIcon = store ? `<img src="${this.escapeHtml(this.getStoreIcon(store))}" alt="${this.escapeHtml(store.name)}" onerror="this.src='${this.escapeHtml(store.icon)}'" style="width: 2rem; height: 2rem; margin-right: 10px; object-fit: contain;" />` : '';
+        const cardStyle = store ? `border-left: 4px solid ${store.color};` : '';
+        
+        // Check if this is a fidelity card (no balance tracking)
+        const balanceDisplay = this.isFidelityCard(card)
+            ? '<span class="fidelity-badge" style="background: #9C27B0; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;">Fidelity Card</span>' 
+            : `<div class="card-balance" ${store ? `style="color: ${store.color};"` : ''}>€${card.currentBalance.toFixed(2)}</div>`;
+        
+        return `
+            <div class="card" onclick="giftCardManager.showCardDetail('${card.id}')" style="${cardStyle}">
+                <div class="card-header">
+                    <div style="display: flex; align-items: center;">
+                        ${storeIcon}
+                        <div>
+                            <div class="card-name">${this.escapeHtml(card.name)}</div>
+                            <div class="card-number">Card #${this.escapeHtml(card.number)}</div>
                         </div>
-                        ${balanceDisplay}
                     </div>
+                    ${balanceDisplay}
+                </div>
+            </div>
+        `;
+    }
+
+    // Render archived cards
+    renderArchivedCards() {
+        const container = document.getElementById('archivedCardsContainer');
+        
+        // Filter archived cards
+        const archivedCards = this.cards.filter(card => card.archived);
+        
+        if (archivedCards.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <p>No archived cards.</p>
                 </div>
             `;
-        }).join('');
+            return;
+        }
+
+        container.innerHTML = archivedCards.map(card => this.generateCardHTML(card)).join('');
+    }
+    
+    // Helper method to update archived cards view if it's currently visible
+    updateArchivedViewIfVisible() {
+        const archivedSection = document.getElementById('archivedCardsSection');
+        if (archivedSection && archivedSection.style.display !== 'none') {
+            this.renderArchivedCards();
+        }
+    }
+
+    // Archive a card
+    archiveCard(cardId) {
+        const card = this.cards.find(c => c.id === cardId);
+        if (!card) return;
+
+        card.archived = true;
+        this.saveCards();
+        this.closeModal();
+        this.renderCards();
+        this.updateArchivedViewIfVisible();
+    }
+
+    // Unarchive a card
+    unarchiveCard(cardId) {
+        const card = this.cards.find(c => c.id === cardId);
+        if (!card) return;
+
+        card.archived = false;
+        this.saveCards();
+        this.closeModal();
+        this.renderCards();
+        this.updateArchivedViewIfVisible();
     }
 
     // Show card detail modal
@@ -331,6 +450,10 @@ class GiftCardManager {
             </div>`}
 
             <div class="mt-20">
+                ${card.archived 
+                    ? `<button class="btn btn-secondary btn-small" onclick="giftCardManager.unarchiveCard('${card.id}')">Unarchive Card</button>`
+                    : `<button class="btn btn-secondary btn-small" onclick="giftCardManager.archiveCard('${card.id}')">Archive Card</button>`
+                }
                 <button class="btn btn-danger btn-small" onclick="giftCardManager.deleteCard('${card.id}')">Delete Card</button>
             </div>
         `;
@@ -458,6 +581,7 @@ const generateBarcode = () => {
         this.saveCards();
         this.closeModal();
         this.renderCards();
+        this.updateArchivedViewIfVisible();
     }
 
     // Export all data to JSON file
@@ -553,8 +677,11 @@ const generateBarcode = () => {
                     return;
                 }
 
-                // Import the data
-                this.cards = importedData.cards;
+                // Import the data and ensure archived property exists for backward compatibility
+                this.cards = importedData.cards.map(card => ({
+                    ...card,
+                    archived: card.archived ?? GiftCardManager.DEFAULT_ARCHIVED_STATE
+                }));
                 this.saveCards();
                 this.renderCards();
                 
