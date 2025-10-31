@@ -702,8 +702,11 @@ const generateBarcode = () => {
                     return;
                 }
 
-                // Import the data
-                this.cards = importedData.cards;
+                // Import the data and ensure archived property exists for backward compatibility
+                this.cards = importedData.cards.map(card => ({
+                    ...card,
+                    archived: card.archived !== undefined ? card.archived : false
+                }));
                 this.saveCards();
                 this.renderCards();
                 
