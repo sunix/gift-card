@@ -144,6 +144,16 @@ class GiftCardManager {
         window.addEventListener('hashchange', () => {
             this.handleHashNavigation();
         });
+        
+        // Listen for language changes to re-render dynamic content
+        window.addEventListener('languageChanged', () => {
+            this.renderCards();
+            // Re-render archived cards if visible
+            const archivedSection = document.getElementById('archivedCardsSection');
+            if (archivedSection && archivedSection.style.display !== 'none') {
+                this.renderArchivedCards();
+            }
+        });
     }
     
     // Handle navigation based on URL hash
@@ -227,7 +237,7 @@ class GiftCardManager {
 
         // Check if card number already exists
         if (this.cards.find(card => card.number === cardNumber)) {
-            alert('A card with this number already exists!');
+            alert(i18n.t('alert.card_exists'));
             return;
         }
 
@@ -257,8 +267,8 @@ class GiftCardManager {
         document.getElementById('addCardForm').reset();
 
         // Show success message
-        const cardType = isFidelityCard ? 'Fidelity card' : 'Gift card';
-        alert(`${cardType} "${cardName}" added successfully!`);
+        const alertKey = isFidelityCard ? 'alert.fidelity_added' : 'alert.gift_card_added';
+        alert(i18n.t(alertKey, { name: cardName }));
     }
 
     // Render all cards
@@ -272,7 +282,7 @@ class GiftCardManager {
         if (activeCards.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
-                    <p>No gift cards yet. <a href="#addCardSection" class="nav-section-link">Add your first card</a>!</p>
+                    <p><span data-i18n="cards.empty">${i18n.t('cards.empty')}</span><a href="#addCardSection" class="nav-section-link" data-i18n="cards.empty_link">${i18n.t('cards.empty_link')}</a>!</p>
                 </div>
             `;
             
@@ -298,8 +308,8 @@ class GiftCardManager {
     generateArchivedCardsLink(archivedCount) {
         return `
             <div style="text-align: center; margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
-                <a href="#archivedCardsSection" class="nav-section-link" style="font-size: 1rem; font-weight: 600;">
-                    📦 View Archived Cards (${archivedCount})
+                <a href="#archivedCardsSection" class="nav-section-link" style="font-size: 1rem; font-weight: 600;" data-i18n="cards.view_archived">
+                    ${i18n.t('cards.view_archived', { count: archivedCount })}
                 </a>
             </div>
         `;
@@ -313,7 +323,7 @@ class GiftCardManager {
         
         // Check if this is a fidelity card (no balance tracking)
         const balanceDisplay = this.isFidelityCard(card)
-            ? '<span class="fidelity-badge" style="background: #9C27B0; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;">Fidelity Card</span>' 
+            ? `<span class="fidelity-badge" style="background: #9C27B0; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;" data-i18n="card.fidelity_badge">${i18n.t('card.fidelity_badge')}</span>` 
             : `<div class="card-balance" ${store ? `style="color: ${store.color};"` : ''}>€${card.currentBalance.toFixed(2)}</div>`;
         
         return `
@@ -342,7 +352,7 @@ class GiftCardManager {
         if (archivedCards.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
-                    <p>No archived cards.</p>
+                    <p data-i18n="archived.empty">${i18n.t('archived.empty')}</p>
                 </div>
             `;
             return;
@@ -400,23 +410,23 @@ class GiftCardManager {
                     <div style="text-align: center; margin-bottom: 10px;"><img src="${this.escapeHtml(this.getStoreIcon(store))}" alt="${this.escapeHtml(store.name)}" onerror="this.src='${this.escapeHtml(store.icon)}'" style="width: 4rem; height: 4rem; object-fit: contain;" /></div>
                     <h2 style="text-align: center; color: white; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">${this.escapeHtml(card.name)}</h2>
                 </div>
-                <p><strong>Card Number:</strong> ${this.escapeHtml(card.number)}</p>
-                ${this.isFidelityCard(card) ? '<p><strong>Type:</strong> <span style="color: #9C27B0; font-weight: bold;">Fidelity Card</span></p>' : `<p><strong>Current Balance:</strong> <span style="color: ${store.color}; font-weight: bold;">€${card.currentBalance.toFixed(2)}</span></p>
-                <p><strong>Initial Balance:</strong> €${card.initialBalance.toFixed(2)}</p>`}
+                <p><strong>${i18n.t('form.card_number')}</strong> ${this.escapeHtml(card.number)}</p>
+                ${this.isFidelityCard(card) ? `<p><strong>${i18n.t('card.type')}</strong> <span style="color: #9C27B0; font-weight: bold;">${i18n.t('card.fidelity_badge')}</span></p>` : `<p><strong>${i18n.t('card.current_balance')}</strong> <span style="color: ${store.color}; font-weight: bold;">€${card.currentBalance.toFixed(2)}</span></p>
+                <p><strong>${i18n.t('card.initial_balance')}</strong> €${card.initialBalance.toFixed(2)}</p>`}
             `;
         } else {
             content.innerHTML = `
                 <h2>${this.escapeHtml(card.name)}</h2>
-                <p><strong>Card Number:</strong> ${this.escapeHtml(card.number)}</p>
-                ${this.isFidelityCard(card) ? '<p><strong>Type:</strong> <span style="color: #9C27B0; font-weight: bold;">Fidelity Card</span></p>' : `<p><strong>Current Balance:</strong> <span class="text-success">€${card.currentBalance.toFixed(2)}</span></p>
-                <p><strong>Initial Balance:</strong> €${card.initialBalance.toFixed(2)}</p>`}
+                <p><strong>${i18n.t('form.card_number')}</strong> ${this.escapeHtml(card.number)}</p>
+                ${this.isFidelityCard(card) ? `<p><strong>${i18n.t('card.type')}</strong> <span style="color: #9C27B0; font-weight: bold;">${i18n.t('card.fidelity_badge')}</span></p>` : `<p><strong>${i18n.t('card.current_balance')}</strong> <span class="text-success">€${card.currentBalance.toFixed(2)}</span></p>
+                <p><strong>${i18n.t('card.initial_balance')}</strong> €${card.initialBalance.toFixed(2)}</p>`}
             `;
         }
         
         content.innerHTML += `
             <div class="barcode-settings">
                 <div class="form-group">
-                    <label for="barcodeFormat">Barcode Type:</label>
+                    <label for="barcodeFormat">${i18n.t('card.barcode_type')}</label>
                     <select id="barcodeFormat" class="barcode-format-select">
                         <option value="CODE128" ${(card.barcodeFormat || 'CODE128') === 'CODE128' ? 'selected' : ''}>CODE 128</option>
                         <option value="CODE39" ${card.barcodeFormat === 'CODE39' ? 'selected' : ''}>CODE 39</option>
@@ -435,31 +445,31 @@ class GiftCardManager {
             </div>
 
             ${this.isFidelityCard(card) ? '' : `<div class="transaction-form">
-                <h3>Add Transaction</h3>
+                <h3>${i18n.t('card.add_transaction')}</h3>
                 <form id="transactionForm">
                     <div class="form-group">
-                        <label for="transactionAmount">Amount Spent (€):</label>
-                        <input type="number" id="transactionAmount" step="0.01" min="0" max="${card.currentBalance}" required placeholder="0.00">
+                        <label for="transactionAmount">${i18n.t('card.amount_spent')}</label>
+                        <input type="number" id="transactionAmount" step="0.01" min="0" max="${card.currentBalance}" required placeholder="${i18n.t('card.amount_placeholder')}">
                     </div>
                     <div class="form-group">
-                        <label for="transactionDescription">Description (optional):</label>
-                        <input type="text" id="transactionDescription" placeholder="e.g., Coffee at Starbucks">
+                        <label for="transactionDescription">${i18n.t('card.description')}</label>
+                        <input type="text" id="transactionDescription" placeholder="${i18n.t('card.description_placeholder')}">
                     </div>
-                    <button type="submit" class="btn btn-secondary">Record Transaction</button>
+                    <button type="submit" class="btn btn-secondary">${i18n.t('card.record_button')}</button>
                 </form>
             </div>
 
             <div class="transaction-history">
-                <h3>Transaction History</h3>
+                <h3>${i18n.t('card.transaction_history')}</h3>
                 ${this.renderTransactions(card)}
             </div>`}
 
             <div class="mt-20">
                 ${card.archived 
-                    ? `<button class="btn btn-secondary btn-small" onclick="giftCardManager.unarchiveCard('${card.id}')">Unarchive Card</button>`
-                    : `<button class="btn btn-secondary btn-small" onclick="giftCardManager.archiveCard('${card.id}')">Archive Card</button>`
+                    ? `<button class="btn btn-secondary btn-small" onclick="giftCardManager.unarchiveCard('${card.id}')">${i18n.t('card.unarchive_button')}</button>`
+                    : `<button class="btn btn-secondary btn-small" onclick="giftCardManager.archiveCard('${card.id}')">${i18n.t('card.archive_button')}</button>`
                 }
-                <button class="btn btn-danger btn-small" onclick="giftCardManager.deleteCard('${card.id}')">Delete Card</button>
+                <button class="btn btn-danger btn-small" onclick="giftCardManager.deleteCard('${card.id}')">${i18n.t('card.delete_button')}</button>
             </div>
         `;
 
@@ -503,7 +513,7 @@ const generateBarcode = () => {
     // Render transaction history
     renderTransactions(card) {
         if (card.transactions.length === 0) {
-            return '<p class="empty-state">No transactions yet.</p>';
+            return `<p class="empty-state">${i18n.t('card.no_transactions')}</p>`;
         }
 
         // Sort transactions by date (newest first)
@@ -513,7 +523,9 @@ const generateBarcode = () => {
 
         return sortedTransactions.map(transaction => {
             const date = new Date(transaction.date);
-            const formattedDate = date.toLocaleString('en-US', {
+            const currentLang = i18n.getCurrentLanguage();
+            const locale = currentLang === 'fr' ? 'fr-FR' : 'en-US';
+            const formattedDate = date.toLocaleString(locale, {
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric',
@@ -523,8 +535,8 @@ const generateBarcode = () => {
 
             const isPositive = transaction.type === 'initial' || transaction.amount > 0;
             const amountDisplay = transaction.type === 'initial' 
-                ? `Initial Balance: €${transaction.amount.toFixed(2)}`
-                : `Spent: €${Math.abs(transaction.amount).toFixed(2)}`;
+                ? i18n.t('transaction.initial_balance', { amount: transaction.amount.toFixed(2) })
+                : i18n.t('transaction.spent', { amount: Math.abs(transaction.amount).toFixed(2) });
 
             return `
                 <div class="transaction-item ${isPositive && transaction.type === 'initial' ? 'positive' : ''}">
@@ -533,7 +545,7 @@ const generateBarcode = () => {
                         ${amountDisplay}
                     </div>
                     ${transaction.description ? `<div><small>${this.escapeHtml(transaction.description)}</small></div>` : ''}
-                    <div class="transaction-balance">Balance after: €${transaction.balanceAfter.toFixed(2)}</div>
+                    <div class="transaction-balance">${i18n.t('transaction.balance_after', { amount: transaction.balanceAfter.toFixed(2) })}</div>
                 </div>
             `;
         }).join('');
@@ -546,7 +558,7 @@ const generateBarcode = () => {
 
         // Fidelity cards don't support transactions
         if (this.isFidelityCard(card)) {
-            alert('Transactions are not supported for fidelity cards.');
+            alert(i18n.t('alert.fidelity_no_transactions'));
             return;
         }
 
@@ -554,7 +566,7 @@ const generateBarcode = () => {
         const description = document.getElementById('transactionDescription').value.trim();
 
         if (amount > card.currentBalance) {
-            alert('Transaction amount exceeds current balance!');
+            alert(i18n.t('alert.transaction_exceeds'));
             return;
         }
 
@@ -578,7 +590,7 @@ const generateBarcode = () => {
 
     // Delete a card
     deleteCard(cardId) {
-        if (!confirm('Are you sure you want to delete this gift card? This action cannot be undone.')) {
+        if (!confirm(i18n.t('alert.delete_confirm'))) {
             return;
         }
 
@@ -623,10 +635,10 @@ const generateBarcode = () => {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            alert(`Data exported successfully to ${filename}`);
+            alert(i18n.t('alert.export_success', { filename }));
         } catch (error) {
             console.error('Export error:', error);
-            alert('Failed to export data. Please try again.');
+            alert(i18n.t('alert.export_failed'));
         }
     }
 
@@ -645,37 +657,37 @@ const generateBarcode = () => {
                 
                 // Validate imported data structure
                 if (!importedData.cards || !Array.isArray(importedData.cards)) {
-                    throw new Error('Invalid data format: missing cards array');
+                    throw new Error(i18n.t('alert.import_invalid'));
                 }
 
                 // Validate each card has required fields with proper types
                 for (const card of importedData.cards) {
                     // Check for required fields and their types
                     if (!card.id || typeof card.id !== 'string' || card.id.trim() === '') {
-                        throw new Error('Invalid card data: id must be a non-empty string');
+                        throw new Error(i18n.t('alert.import_invalid_id'));
                     }
                     if (!card.number || typeof card.number !== 'string' || card.number.trim() === '') {
-                        throw new Error('Invalid card data: number must be a non-empty string');
+                        throw new Error(i18n.t('alert.import_invalid_number'));
                     }
                     if (!card.name || typeof card.name !== 'string' || card.name.trim() === '') {
-                        throw new Error('Invalid card data: name must be a non-empty string');
+                        throw new Error(i18n.t('alert.import_invalid_name'));
                     }
                     if (!Array.isArray(card.transactions)) {
-                        throw new Error('Invalid card data: transactions must be an array');
+                        throw new Error(i18n.t('alert.import_invalid_transactions'));
                     }
                     // Validate balance fields (can be null for fidelity cards, or numbers for gift cards)
                     if (card.initialBalance !== null && card.initialBalance !== undefined && typeof card.initialBalance !== 'number') {
-                        throw new Error('Invalid card data: initialBalance must be null or a number');
+                        throw new Error(i18n.t('alert.import_invalid_balance'));
                     }
                     if (card.currentBalance !== null && card.currentBalance !== undefined && typeof card.currentBalance !== 'number') {
-                        throw new Error('Invalid card data: currentBalance must be null or a number');
+                        throw new Error(i18n.t('alert.import_invalid_current'));
                     }
                 }
 
                 // Ask for confirmation before overwriting
                 const currentCount = this.cards.length;
                 const importCount = importedData.cards.length;
-                const confirmMessage = `This will replace all current data (${currentCount} cards) with imported data (${importCount} cards). Continue?`;
+                const confirmMessage = i18n.t('alert.import_confirm', { current: currentCount, imported: importCount });
                 if (!confirm(confirmMessage)) {
                     // Reset file input
                     event.target.value = '';
@@ -696,13 +708,15 @@ const generateBarcode = () => {
                     const exportDate = new Date(importedData.exportDate);
                     // Check if the date is valid
                     if (!isNaN(exportDate.getTime())) {
-                        exportDateStr = exportDate.toLocaleString();
+                        const currentLang = i18n.getCurrentLanguage();
+                        const locale = currentLang === 'fr' ? 'fr-FR' : 'en-US';
+                        exportDateStr = exportDate.toLocaleString(locale);
                     }
                 }
-                alert(`Successfully imported ${importCount} card(s) from ${exportDateStr}`);
+                alert(i18n.t('alert.import_success', { count: importCount, date: exportDateStr }));
             } catch (error) {
                 console.error('Import error:', error);
-                alert(`Failed to import data: ${error.message}`);
+                alert(i18n.t('alert.import_failed', { error: error.message }));
             } finally {
                 // Reset file input so the same file can be selected again
                 event.target.value = '';
@@ -710,7 +724,7 @@ const generateBarcode = () => {
         };
         
         reader.onerror = () => {
-            alert('Failed to read file. Please try again.');
+            alert(i18n.t('alert.import_read_failed'));
             event.target.value = '';
         };
         
@@ -811,7 +825,9 @@ const generateBarcode = () => {
 
 // Initialize the app when DOM is loaded
 let giftCardManager;
-document.addEventListener('DOMContentLoaded', async () => {
+
+// Wait for i18n to be ready before initializing the app
+window.addEventListener('i18nReady', async () => {
     giftCardManager = new GiftCardManager();
     await giftCardManager.init();
     
