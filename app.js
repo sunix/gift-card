@@ -473,18 +473,17 @@ class GiftCardManager {
             </div>
         `;
 
-        // Generate barcode-style visual
-// Génération réelle avec bwip-js
-const generateBarcode = () => {
-    const selectedFormat = document.getElementById('barcodeFormat').value;
-    renderBarcode('#barcode', card.number, {
-        format: selectedFormat,
-        scale: 3,         // largeur des modules
-        height: 15,       // mm
-        includetext: true,
-        textsize: 14
-    });
-};
+        // Generate barcode using bwip-js
+        const generateBarcode = () => {
+            const selectedFormat = document.getElementById('barcodeFormat').value;
+            renderBarcode('#barcode', card.number, {
+                format: selectedFormat,
+                scale: 3,         // module width
+                height: 15,       // mm
+                includetext: true,
+                textsize: 14
+            });
+        };
 
         
         // Initial barcode generation
@@ -813,13 +812,6 @@ const generateBarcode = () => {
         // Save and re-render
         this.saveCards();
         this.renderCards();
-    }
-
-    // Escape HTML to prevent XSS
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
     }
 }
 
