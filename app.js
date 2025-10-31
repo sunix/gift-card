@@ -6,6 +6,8 @@ class GiftCardManager {
     constructor() {
         this.cards = this.loadCards();
         this.stores = [];
+        this.draggedElement = null;
+        this.draggedCardId = null;
     }
 
     // Check if a card is a fidelity card (no balance tracking)
@@ -287,6 +289,9 @@ class GiftCardManager {
         if (archivedCards.length > 0) {
             container.innerHTML += this.generateArchivedCardsLink(archivedCards.length);
         }
+        
+        // Setup drag and drop event listeners for cards
+        this.setupDragAndDrop();
     }
     
     // Helper method to generate archived cards link HTML
@@ -312,7 +317,7 @@ class GiftCardManager {
             : `<div class="card-balance" ${store ? `style="color: ${store.color};"` : ''}>€${card.currentBalance.toFixed(2)}</div>`;
         
         return `
-            <div class="card" onclick="giftCardManager.showCardDetail('${card.id}')" style="${cardStyle}">
+            <div class="card" draggable="true" data-card-id="${card.id}" onclick="giftCardManager.showCardDetail('${card.id}')" style="${cardStyle}">
                 <div class="card-header">
                     <div style="display: flex; align-items: center;">
                         ${storeIcon}
@@ -715,6 +720,80 @@ const generateBarcode = () => {
     // Close modal
     closeModal() {
         document.getElementById('cardDetailModal').style.display = 'none';
+    }
+
+    // Setup drag and drop functionality for cards
+    setupDragAndDrop() {
+        const cardElements = document.querySelectorAll('.card[draggable="true"]');
+        
+        cardElements.forEach(cardElement => {
+            // Dragstart - save the dragged element
+            cardElement.addEventListener('dragstart', (e) => {
+                this.draggedElement = cardElement;
+                this.draggedCardId = cardElement.getAttribute('data-card-id');
+                cardElement.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/html', cardElement.innerHTML);
+            });
+            
+            // Dragend - cleanup
+            cardElement.addEventListener('dragend', (e) => {
+                cardElement.classList.remove('dragging');
+                // Remove all drag-over classes
+                document.querySelectorAll('.card').forEach(card => {
+                    card.classList.remove('drag-over');
+                });
+            });
+            
+            // Dragover - allow drop
+            cardElement.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                
+                if (this.draggedElement !== cardElement) {
+                    cardElement.classList.add('drag-over');
+                }
+            });
+            
+            // Dragleave - remove hover effect
+            cardElement.addEventListener('dragleave', (e) => {
+                cardElement.classList.remove('drag-over');
+            });
+            
+            // Drop - reorder cards
+            cardElement.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                cardElement.classList.remove('drag-over');
+                
+                if (this.draggedElement !== cardElement) {
+                    const targetCardId = cardElement.getAttribute('data-card-id');
+                    this.reorderCards(this.draggedCardId, targetCardId);
+                }
+            });
+        });
+    }
+    
+    // Reorder cards in the array
+    reorderCards(draggedCardId, targetCardId) {
+        // Find indices
+        const draggedIndex = this.cards.findIndex(card => card.id === draggedCardId);
+        const targetIndex = this.cards.findIndex(card => card.id === targetCardId);
+        
+        if (draggedIndex === -1 || targetIndex === -1) {
+            return;
+        }
+        
+        // Remove the dragged card
+        const [draggedCard] = this.cards.splice(draggedIndex, 1);
+        
+        // Insert at the new position
+        this.cards.splice(targetIndex, 0, draggedCard);
+        
+        // Save and re-render
+        this.saveCards();
+        this.renderCards();
     }
 
     // Escape HTML to prevent XSS
