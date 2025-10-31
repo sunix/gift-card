@@ -1,5 +1,8 @@
 // Gift Card Manager Application
 class GiftCardManager {
+    // Constants
+    static DEFAULT_ARCHIVED_STATE = false;
+    
     constructor() {
         this.cards = this.loadCards();
         this.stores = [];
@@ -241,7 +244,7 @@ class GiftCardManager {
                 description: 'Initial balance'
             }],
             createdAt: new Date().toISOString(),
-            archived: false
+            archived: GiftCardManager.DEFAULT_ARCHIVED_STATE
         };
 
         this.cards.push(newCard);
@@ -273,53 +276,55 @@ class GiftCardManager {
             
             // Still show link to archived cards if there are any
             if (archivedCards.length > 0) {
-                container.innerHTML += `
-                    <div style="text-align: center; margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
-                        <a href="#archivedCardsSection" class="nav-section-link" style="font-size: 1rem; font-weight: 600;">
-                            📦 View Archived Cards (${archivedCards.length})
-                        </a>
-                    </div>
-                `;
+                container.innerHTML += this.generateArchivedCardsLink(archivedCards.length);
             }
             return;
         }
 
-        container.innerHTML = activeCards.map(card => {
-            const store = this.matchStore(card.name);
-            const storeIcon = store ? `<img src="${this.escapeHtml(this.getStoreIcon(store))}" alt="${this.escapeHtml(store.name)}" onerror="this.src='${this.escapeHtml(store.icon)}'" style="width: 2rem; height: 2rem; margin-right: 10px; object-fit: contain;" />` : '';
-            const cardStyle = store ? `border-left: 4px solid ${store.color};` : '';
-            
-            // Check if this is a fidelity card (no balance tracking)
-            const balanceDisplay = this.isFidelityCard(card)
-                ? '<span class="fidelity-badge" style="background: #9C27B0; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;">Fidelity Card</span>' 
-                : `<div class="card-balance" ${store ? `style="color: ${store.color};"` : ''}>€${card.currentBalance.toFixed(2)}</div>`;
-            
-            return `
-                <div class="card" onclick="giftCardManager.showCardDetail('${card.id}')" style="${cardStyle}">
-                    <div class="card-header">
-                        <div style="display: flex; align-items: center;">
-                            ${storeIcon}
-                            <div>
-                                <div class="card-name">${this.escapeHtml(card.name)}</div>
-                                <div class="card-number">Card #${this.escapeHtml(card.number)}</div>
-                            </div>
-                        </div>
-                        ${balanceDisplay}
-                    </div>
-                </div>
-            `;
-        }).join('');
+        container.innerHTML = activeCards.map(card => this.generateCardHTML(card)).join('');
         
         // Add link to archived cards if there are any
         if (archivedCards.length > 0) {
-            container.innerHTML += `
-                <div style="text-align: center; margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
-                    <a href="#archivedCardsSection" class="nav-section-link" style="font-size: 1rem; font-weight: 600;">
-                        📦 View Archived Cards (${archivedCards.length})
-                    </a>
-                </div>
-            `;
+            container.innerHTML += this.generateArchivedCardsLink(archivedCards.length);
         }
+    }
+    
+    // Helper method to generate archived cards link HTML
+    generateArchivedCardsLink(archivedCount) {
+        return `
+            <div style="text-align: center; margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                <a href="#archivedCardsSection" class="nav-section-link" style="font-size: 1rem; font-weight: 600;">
+                    📦 View Archived Cards (${archivedCount})
+                </a>
+            </div>
+        `;
+    }
+    
+    // Helper method to generate card HTML
+    generateCardHTML(card) {
+        const store = this.matchStore(card.name);
+        const storeIcon = store ? `<img src="${this.escapeHtml(this.getStoreIcon(store))}" alt="${this.escapeHtml(store.name)}" onerror="this.src='${this.escapeHtml(store.icon)}'" style="width: 2rem; height: 2rem; margin-right: 10px; object-fit: contain;" />` : '';
+        const cardStyle = store ? `border-left: 4px solid ${store.color};` : '';
+        
+        // Check if this is a fidelity card (no balance tracking)
+        const balanceDisplay = this.isFidelityCard(card)
+            ? '<span class="fidelity-badge" style="background: #9C27B0; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;">Fidelity Card</span>' 
+            : `<div class="card-balance" ${store ? `style="color: ${store.color};"` : ''}>€${card.currentBalance.toFixed(2)}</div>`;
+        
+        return `
+            <div class="card" onclick="giftCardManager.showCardDetail('${card.id}')" style="${cardStyle}">
+                <div class="card-header">
+                    <div style="display: flex; align-items: center;">
+                        ${storeIcon}
+                        <div>
+                            <div class="card-name">${this.escapeHtml(card.name)}</div>
+                            <div class="card-number">Card #${this.escapeHtml(card.number)}</div>
+                        </div>
+                    </div>
+                    ${balanceDisplay}
+                </div>
+            </div>
+        `;
     }
 
     // Render archived cards
@@ -338,31 +343,7 @@ class GiftCardManager {
             return;
         }
 
-        container.innerHTML = archivedCards.map(card => {
-            const store = this.matchStore(card.name);
-            const storeIcon = store ? `<img src="${this.escapeHtml(this.getStoreIcon(store))}" alt="${this.escapeHtml(store.name)}" onerror="this.src='${this.escapeHtml(store.icon)}'" style="width: 2rem; height: 2rem; margin-right: 10px; object-fit: contain;" />` : '';
-            const cardStyle = store ? `border-left: 4px solid ${store.color};` : '';
-            
-            // Check if this is a fidelity card (no balance tracking)
-            const balanceDisplay = this.isFidelityCard(card)
-                ? '<span class="fidelity-badge" style="background: #9C27B0; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;">Fidelity Card</span>' 
-                : `<div class="card-balance" ${store ? `style="color: ${store.color};"` : ''}>€${card.currentBalance.toFixed(2)}</div>`;
-            
-            return `
-                <div class="card" onclick="giftCardManager.showCardDetail('${card.id}')" style="${cardStyle}">
-                    <div class="card-header">
-                        <div style="display: flex; align-items: center;">
-                            ${storeIcon}
-                            <div>
-                                <div class="card-name">${this.escapeHtml(card.name)}</div>
-                                <div class="card-number">Card #${this.escapeHtml(card.number)}</div>
-                            </div>
-                        </div>
-                        ${balanceDisplay}
-                    </div>
-                </div>
-            `;
-        }).join('');
+        container.innerHTML = archivedCards.map(card => this.generateCardHTML(card)).join('');
     }
     
     // Helper method to update archived cards view if it's currently visible
@@ -699,7 +680,7 @@ const generateBarcode = () => {
                 // Import the data and ensure archived property exists for backward compatibility
                 this.cards = importedData.cards.map(card => ({
                     ...card,
-                    archived: card.archived !== undefined ? card.archived : false
+                    archived: card.archived ?? GiftCardManager.DEFAULT_ARCHIVED_STATE
                 }));
                 this.saveCards();
                 this.renderCards();
