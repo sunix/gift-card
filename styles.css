@@ -22,6 +22,50 @@ body {
     line-height: 1.6;
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
+/* Navigation Bar Styles */
+.nav-bar {
+    position: sticky;
+    top: 0;
+    z-index: 999;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    margin-bottom: 20px;
+}
+
+.nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 0;
+}
+
+.nav-link {
+    color: white;
+    text-decoration: none;
+    padding: 15px 20px;
+    display: inline-block;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: background-color 0.3s, transform 0.2s;
+    border-bottom: 3px solid transparent;
+}
+
+.nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-bottom-color: white;
+}
+
+.nav-link:active {
+    transform: scale(0.95);
+}
+
 .container {
     max-width: 1200px;
     margin: 0 auto;
@@ -335,6 +379,15 @@ h2 {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+    .nav-container {
+        justify-content: space-around;
+    }
+    
+    .nav-link {
+        padding: 12px 10px;
+        font-size: 0.85rem;
+    }
+
     .container {
         padding: 10px;
     }
@@ -381,6 +434,11 @@ h2 {
 }
 
 @media (max-width: 480px) {
+    .nav-link {
+        padding: 10px 8px;
+        font-size: 0.8rem;
+    }
+
     .form-group input {
         font-size: 16px; /* Prevents zoom on iOS */
     }

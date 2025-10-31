@@ -26,6 +26,16 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <!-- Navigation Bar -->
+    <nav class="nav-bar" id="navBar">
+        <div class="nav-container">
+            <a href="#introSection" class="nav-link">📖 Introduction</a>
+            <a href="#cardsList" class="nav-link">🎁 My Cards</a>
+            <a href="#addCardSection" class="nav-link">➕ Add Card</a>
+            <a href="#importExportSection" class="nav-link">💾 Import/Export</a>
+        </div>
+    </nav>
+
     <div class="container">
         <header>
             <h1>🎁 Gift Card Manager</h1>
@@ -92,7 +102,7 @@
             </section>
 
             <!-- Import/Export Section -->
-            <section class="import-export-section">
+            <section class="import-export-section" id="importExportSection">
                 <h2>Data Management</h2>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <button id="exportBtn" class="btn btn-secondary">📥 Export All Data</button>
