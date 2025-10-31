@@ -226,7 +226,7 @@ class GiftCardManager {
         if (this.cards.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
-                    <p>No gift cards yet. Add your first card above!</p>
+                    <p>No gift cards yet. <a href="#addCardSection" style="color: #2196F3; text-decoration: none; border-bottom: 2px solid #2196F3;">Add your first card</a>!</p>
                 </div>
             `;
             return;
