@@ -151,6 +151,34 @@ The app automatically recognizes and brands cards from the following stores:
 
 Each recognized store displays with its custom logo and brand colors. You can add more stores by editing the `stores.json` file.
 
+### Adding Custom Stores
+
+To add a new store to the recognition system:
+
+1. Edit the `stores.json` file and add a new entry:
+```json
+{
+  "name": "Store Name",
+  "matchStrings": ["store", "store name", "store-keyword"],
+  "iconUrl": "https://example.com/logo.svg",
+  "icon": "store-logos/store-name.svg",
+  "color": "#FF0000",
+  "background": "linear-gradient(135deg, #FF0000, #FF6B6B)"
+}
+```
+
+2. Create a corresponding SVG logo file in the `store-logos/` directory
+
+**Field descriptions:**
+- `name`: Display name of the store
+- `matchStrings`: Array of keywords to match in card names (case-insensitive)
+- `iconUrl`: URL to the official logo (optional, for reference)
+- `icon`: Path to the local SVG logo file
+- `color`: Primary brand color (hex format)
+- `background`: CSS gradient for the card header background
+
+See `STORE_LOGOS.md` for more details about the logo system and CORS considerations.
+
 ## Browser Compatibility
 
 Works on all modern browsers that support:
