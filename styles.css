@@ -152,6 +152,22 @@ h2 {
     transform: translateY(-2px);
 }
 
+/* Drag and Drop Styles */
+.card[draggable="true"] {
+    cursor: move;
+}
+
+.card.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+}
+
+.card.drag-over {
+    border-color: var(--secondary-color);
+    border-style: dashed;
+    background-color: rgba(33, 150, 243, 0.1);
+}
+
 .card-header {
     display: flex;
     justify-content: space-between;
