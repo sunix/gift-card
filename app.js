@@ -103,6 +103,21 @@ class GiftCardManager {
             this.addCard();
         });
 
+        // Export button
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            this.exportData();
+        });
+
+        // Import button
+        document.getElementById('importBtn').addEventListener('click', () => {
+            document.getElementById('importFile').click();
+        });
+
+        // Import file input
+        document.getElementById('importFile').addEventListener('change', (e) => {
+            this.importData(e);
+        });
+
         // Modal close button
         document.querySelector('.close').addEventListener('click', () => {
             this.closeModal();
@@ -412,6 +427,105 @@ const generateBarcode = () => {
         this.saveCards();
         this.closeModal();
         this.renderCards();
+    }
+
+    // Export all data to JSON file
+    exportData() {
+        try {
+            // Create export data object with metadata
+            const exportData = {
+                version: '1.0',
+                exportDate: new Date().toISOString(),
+                cards: this.cards
+            };
+
+            // Convert to JSON
+            const jsonString = JSON.stringify(exportData, null, 2);
+            
+            // Create blob
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            
+            // Generate filename with date and time
+            const now = new Date();
+            const dateStr = now.toISOString().replace(/[:.]/g, '-').slice(0, -5); // Format: YYYY-MM-DDTHH-MM-SS
+            const filename = `gift-cards-backup-${dateStr}.json`;
+            
+            // Create download link
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            
+            // Cleanup
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            alert(`Data exported successfully to ${filename}`);
+        } catch (error) {
+            console.error('Export error:', error);
+            alert('Failed to export data. Please try again.');
+        }
+    }
+
+    // Import data from JSON file
+    importData(event) {
+        const file = event.target.files[0];
+        if (!file) {
+            return;
+        }
+
+        const reader = new FileReader();
+        
+        reader.onload = (e) => {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                
+                // Validate imported data structure
+                if (!importedData.cards || !Array.isArray(importedData.cards)) {
+                    throw new Error('Invalid data format: missing cards array');
+                }
+
+                // Validate each card has required fields
+                for (const card of importedData.cards) {
+                    if (!card.id || !card.number || !card.name) {
+                        throw new Error('Invalid card data: missing required fields');
+                    }
+                    if (!Array.isArray(card.transactions)) {
+                        throw new Error('Invalid card data: transactions must be an array');
+                    }
+                }
+
+                // Ask for confirmation before overwriting
+                const confirmMessage = `This will replace all current data (${this.cards.length} cards) with imported data (${importedData.cards.length} cards). Continue?`;
+                if (!confirm(confirmMessage)) {
+                    // Reset file input
+                    event.target.value = '';
+                    return;
+                }
+
+                // Import the data
+                this.cards = importedData.cards;
+                this.saveCards();
+                this.renderCards();
+                
+                alert(`Successfully imported ${importedData.cards.length} card(s) from ${importedData.exportDate ? new Date(importedData.exportDate).toLocaleString() : 'backup'}`);
+            } catch (error) {
+                console.error('Import error:', error);
+                alert(`Failed to import data: ${error.message}`);
+            } finally {
+                // Reset file input so the same file can be selected again
+                event.target.value = '';
+            }
+        };
+        
+        reader.onerror = () => {
+            alert('Failed to read file. Please try again.');
+            event.target.value = '';
+        };
+        
+        reader.readAsText(file);
     }
 
     // Close modal

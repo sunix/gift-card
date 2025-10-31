@@ -32,6 +32,17 @@
         </header>
 
         <main>
+            <!-- Import/Export Section -->
+            <section class="import-export-section">
+                <h2>Data Management</h2>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button id="exportBtn" class="btn btn-secondary">📥 Export All Data</button>
+                    <button id="importBtn" class="btn btn-secondary">📤 Import Data</button>
+                    <input type="file" id="importFile" accept=".json" style="display: none;">
+                </div>
+                <p style="margin-top: 10px; font-size: 0.9rem; color: #666;">Export your data as a backup or import previously exported data.</p>
+            </section>
+
             <!-- Gift Cards List -->
             <section class="cards-list" id="cardsList">
                 <h2>My Gift Cards</h2>
