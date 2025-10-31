@@ -24,15 +24,48 @@
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
     
     <link rel="stylesheet" href="styles.css">
+    
+    <!-- Inline Tailwind-inspired utility classes via style tag for navigation -->
+    <style>
+        /* Tailwind-inspired utility classes for navigation */
+        .nav-sticky { position: sticky; top: 0; z-index: 999; }
+        .nav-gradient { background: linear-gradient(135deg, #4CAF50, #2196F3); }
+        .nav-shadow { box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        .nav-mb { margin-bottom: 1.25rem; }
+        .nav-container { max-width: 1200px; margin: 0 auto; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; }
+        .nav-link-base { color: white; text-decoration: none; padding: 1rem 1.25rem; display: inline-block; font-weight: 600; font-size: 0.95rem; transition: all 0.3s; border-bottom: 4px solid transparent; }
+        .nav-link-base:hover { background-color: rgba(255, 255, 255, 0.15); border-bottom-color: white; }
+        .nav-link-base:active { transform: scale(0.95); }
+        .nav-text-hide { display: inline; }
+        
+        /* Mobile responsive - hide text labels on small screens, show only icons */
+        @media (max-width: 640px) {
+            .nav-link-base { padding: 0.75rem 1rem; font-size: 1.25rem; }
+            .nav-text-hide { display: none; }
+        }
+        
+        /* Tablet */
+        @media (min-width: 641px) and (max-width: 768px) {
+            .nav-link-base { padding: 0.875rem 1.125rem; font-size: 0.875rem; }
+        }
+    </style>
 </head>
 <body>
-    <!-- Navigation Bar -->
-    <nav class="nav-bar" id="navBar">
+    <!-- Navigation Bar with Tailwind-inspired responsive design -->
+    <nav class="nav-sticky nav-gradient nav-shadow nav-mb">
         <div class="nav-container">
-            <a href="#introSection" class="nav-link">📖 Introduction</a>
-            <a href="#cardsList" class="nav-link">🎁 My Cards</a>
-            <a href="#addCardSection" class="nav-link">➕ Add Card</a>
-            <a href="#importExportSection" class="nav-link">💾 Import/Export</a>
+            <a href="#introSection" class="nav-link-base">
+                📖 <span class="nav-text-hide">Introduction</span>
+            </a>
+            <a href="#cardsList" class="nav-link-base">
+                🎁 <span class="nav-text-hide">My Cards</span>
+            </a>
+            <a href="#addCardSection" class="nav-link-base">
+                ➕ <span class="nav-text-hide">Add Card</span>
+            </a>
+            <a href="#importExportSection" class="nav-link-base">
+                💾 <span class="nav-text-hide">Import/Export</span>
+            </a>
         </div>
     </nav>
 
