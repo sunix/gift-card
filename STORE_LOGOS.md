@@ -39,11 +39,22 @@ Reference URLs for official logos (for manual download):
 - **Decathlon**: https://www.decathlon.fr/themes/custom/dc_theme/assets/images/logo-decathlon.svg
 - **Leroy Merlin**: https://www.leroymerlin.fr/assets/logo-lr.svg
 - **Picard**: https://www.picard.fr/assets/images/logo.svg
-- **Franprix**: https://www.franprix.fr/static/media/logo-franprix.svg
+- **Franprix**: https://upload.wikimedia.org/wikipedia/commons/0/0d/Franprix_logo.svg
 - **Fnac**: https://static.fnac-static.com/assets/logo-fnac.svg
 - **McDonald's**: https://www.mcdonalds.com/content/dam/sites/usa/nfl/icons/arches-logo_108x108.jpg
 - **Truffaut**: https://www.truffaut.com/skin/frontend/truffaut/default/images/logo.svg
 - **E. Leclerc**: https://www.e.leclerc/img/logo-leclerc.svg
+
+## Supported Image Formats
+
+The download script and application support multiple image formats:
+- **SVG** - Scalable vector graphics (recommended for quality and size)
+- **PNG** - Portable Network Graphics
+- **JPG/JPEG** - JPEG images
+- **GIF** - Graphics Interchange Format
+- **WebP** - Modern image format with superior compression
+
+When adding a new store or updating an existing one, ensure the `iconUrl` points to a publicly accessible URL. Some retailer websites may block automated downloads (returning 403 Forbidden errors), so consider using reliable sources like Wikipedia Commons.
 
 ## Fallback SVG Logos
 
