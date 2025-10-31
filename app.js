@@ -733,14 +733,16 @@ const generateBarcode = () => {
                 this.draggedCardId = cardElement.getAttribute('data-card-id');
                 cardElement.classList.add('dragging');
                 e.dataTransfer.effectAllowed = 'move';
-                e.dataTransfer.setData('text/html', cardElement.innerHTML);
+                // Use card ID instead of full HTML content for security
+                e.dataTransfer.setData('text/plain', this.draggedCardId);
             });
             
             // Dragend - cleanup
             cardElement.addEventListener('dragend', (e) => {
                 cardElement.classList.remove('dragging');
-                // Remove all drag-over classes
-                document.querySelectorAll('.card').forEach(card => {
+                // Remove drag-over class only from elements that have it
+                const dragOverElements = document.querySelectorAll('.card.drag-over');
+                dragOverElements.forEach(card => {
                     card.classList.remove('drag-over');
                 });
             });
@@ -755,9 +757,12 @@ const generateBarcode = () => {
                 }
             });
             
-            // Dragleave - remove hover effect
+            // Dragleave - remove hover effect, check for child element transitions
             cardElement.addEventListener('dragleave', (e) => {
-                cardElement.classList.remove('drag-over');
+                // Only remove class if actually leaving the card element
+                if (!cardElement.contains(e.relatedTarget)) {
+                    cardElement.classList.remove('drag-over');
+                }
             });
             
             // Drop - reorder cards
