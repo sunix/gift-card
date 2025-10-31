@@ -402,3 +402,85 @@ h2 {
 .text-danger {
     color: var(--danger-color);
 }
+
+/* Introduction Section Styles */
+.intro-section {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-left: 4px solid var(--primary-color);
+}
+
+.intro-section h2 {
+    text-align: center;
+    color: var(--primary-color);
+    margin-bottom: 15px;
+}
+
+.intro-section > p {
+    text-align: center;
+    font-size: 1.1rem;
+    margin-bottom: 25px;
+    color: #555;
+}
+
+.intro-cta {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.intro-features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.intro-feature {
+    text-align: center;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.intro-feature:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.feature-icon {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.intro-feature h3 {
+    font-size: 1.1rem;
+    margin: 10px 0;
+    color: var(--text-color);
+}
+
+.intro-feature p {
+    font-size: 0.9rem;
+    color: #666;
+    margin: 0;
+}
+
+/* Responsive adjustments for intro section */
+@media (max-width: 768px) {
+    .intro-features {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+    }
+    
+    .feature-icon {
+        font-size: 2rem;
+    }
+    
+    .intro-feature h3 {
+        font-size: 1rem;
+    }
+    
+    .intro-feature p {
+        font-size: 0.85rem;
+    }
+}

@@ -94,6 +94,9 @@ class GiftCardManager {
         // Load stores configuration first
         await this.loadStores();
         
+        // Handle introduction section positioning
+        this.positionIntroSection();
+        
         // Load cards on startup
         this.renderCards();
         
@@ -130,6 +133,34 @@ class GiftCardManager {
                 this.closeModal();
             }
         });
+    }
+
+    /**
+     * Position the introduction section based on whether this is the user's first visit.
+     * On first visit: section stays at the top (as positioned in HTML)
+     * On subsequent visits: section is moved to the bottom of the main content
+     * Uses localStorage to track visit status with error handling for private browsing mode.
+     */
+    positionIntroSection() {
+        try {
+            const hasVisited = localStorage.getItem('hasVisited');
+            const introSection = document.getElementById('introSection');
+            const main = document.querySelector('main');
+            
+            if (!hasVisited) {
+                // First visit: intro section stays at top (already positioned in HTML)
+                localStorage.setItem('hasVisited', 'true');
+            } else {
+                // Subsequent visits: move intro section to the bottom
+                if (introSection && main) {
+                    main.appendChild(introSection);
+                }
+            }
+        } catch (error) {
+            // Handle localStorage errors (e.g., private browsing mode, storage full)
+            console.warn('Unable to access localStorage for intro positioning:', error);
+            // Default behavior: keep intro section at top if localStorage fails
+        }
     }
 
     // Load cards from localStorage
