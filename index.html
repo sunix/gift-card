@@ -324,8 +324,13 @@
         });
         
         // Close menu when clicking a link (for smooth navigation on mobile)
+        // Exception: Don't close menu when clicking the Language button
         document.querySelectorAll('.nav-link').forEach(link => {
             link.addEventListener('click', function() {
+                // Skip closing menu if this is the language button
+                if (this.id === 'languageButton') {
+                    return;
+                }
                 const menu = document.getElementById('navbarMenu');
                 if (menu.classList.contains('active')) {
                     menu.classList.remove('active');
@@ -376,6 +381,12 @@
                 await i18n.changeLanguage(lang);
                 updateActiveLanguage();
                 languageDropdown.classList.remove('active');
+                
+                // Close mobile menu after language selection
+                const menu = document.getElementById('navbarMenu');
+                if (menu.classList.contains('active')) {
+                    menu.classList.remove('active');
+                }
             });
         });
 
