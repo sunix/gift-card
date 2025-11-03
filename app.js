@@ -10,6 +10,17 @@ class GiftCardManager {
         this.draggedCardId = null;
     }
 
+    // Get locale string for date formatting based on current language
+    getLocaleForLanguage(lang) {
+        const localeMap = {
+            'fr': 'fr-FR',
+            'en': 'en-US',
+            'uk': 'uk-UA',
+            'ru': 'ru-RU'
+        };
+        return localeMap[lang] || 'en-US';
+    }
+
     // Check if a card is a fidelity card (no balance tracking)
     isFidelityCard(card) {
         return card.currentBalance === null || card.currentBalance === undefined || card.currentBalance === 0;
@@ -523,13 +534,7 @@ class GiftCardManager {
         return sortedTransactions.map(transaction => {
             const date = new Date(transaction.date);
             const currentLang = i18n.getCurrentLanguage();
-            const localeMap = {
-                'fr': 'fr-FR',
-                'en': 'en-US',
-                'uk': 'uk-UA',
-                'ru': 'ru-RU'
-            };
-            const locale = localeMap[currentLang] || 'en-US';
+            const locale = this.getLocaleForLanguage(currentLang);
             const formattedDate = date.toLocaleString(locale, {
                 year: 'numeric',
                 month: 'short',
@@ -714,13 +719,7 @@ class GiftCardManager {
                     // Check if the date is valid
                     if (!isNaN(exportDate.getTime())) {
                         const currentLang = i18n.getCurrentLanguage();
-                        const localeMap = {
-                            'fr': 'fr-FR',
-                            'en': 'en-US',
-                            'uk': 'uk-UA',
-                            'ru': 'ru-RU'
-                        };
-                        const locale = localeMap[currentLang] || 'en-US';
+                        const locale = this.getLocaleForLanguage(currentLang);
                         exportDateStr = exportDate.toLocaleString(locale);
                     }
                 }
