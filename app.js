@@ -523,7 +523,13 @@ class GiftCardManager {
         return sortedTransactions.map(transaction => {
             const date = new Date(transaction.date);
             const currentLang = i18n.getCurrentLanguage();
-            const locale = currentLang === 'fr' ? 'fr-FR' : 'en-US';
+            const localeMap = {
+                'fr': 'fr-FR',
+                'en': 'en-US',
+                'uk': 'uk-UA',
+                'ru': 'ru-RU'
+            };
+            const locale = localeMap[currentLang] || 'en-US';
             const formattedDate = date.toLocaleString(locale, {
                 year: 'numeric',
                 month: 'short',
@@ -708,7 +714,13 @@ class GiftCardManager {
                     // Check if the date is valid
                     if (!isNaN(exportDate.getTime())) {
                         const currentLang = i18n.getCurrentLanguage();
-                        const locale = currentLang === 'fr' ? 'fr-FR' : 'en-US';
+                        const localeMap = {
+                            'fr': 'fr-FR',
+                            'en': 'en-US',
+                            'uk': 'uk-UA',
+                            'ru': 'ru-RU'
+                        };
+                        const locale = localeMap[currentLang] || 'en-US';
                         exportDateStr = exportDate.toLocaleString(locale);
                     }
                 }

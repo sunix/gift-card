@@ -23,8 +23,8 @@ class I18n {
         const browserLang = navigator.language || navigator.userLanguage;
         // Extract the language code (e.g., 'fr' from 'fr-FR')
         const langCode = browserLang.split('-')[0].toLowerCase();
-        // Support only 'fr' and 'en', default to 'en'
-        return ['fr', 'en'].includes(langCode) ? langCode : 'en';
+        // Support 'fr', 'en', 'uk', and 'ru', default to 'en'
+        return ['fr', 'en', 'uk', 'ru'].includes(langCode) ? langCode : 'en';
     }
 
     // Save language preference to localStorage
