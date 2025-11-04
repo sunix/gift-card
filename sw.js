@@ -41,28 +41,36 @@ self.addEventListener('activate', (event) => {
 // Fetch event - network first with timeout, fallback to cache
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    Promise.race([
-      fetch(event.request)
-        .then((response) => {
-          // Check if we received a valid response
-          if (!response || response.status !== 200 || response.type !== 'basic') {
+    new Promise((resolve, reject) => {
+      let timeoutId;
+      const timeoutPromise = new Promise((_, timeoutReject) => {
+        timeoutId = setTimeout(() => timeoutReject(new Error('Network timeout')), 4000);
+      });
+
+      Promise.race([
+        fetch(event.request)
+          .then((response) => {
+            clearTimeout(timeoutId);
+            // Check if we received a valid response
+            if (!response || response.status !== 200 || response.type !== 'basic') {
+              return response;
+            }
+
+            // Clone the response to cache it
+            const responseToCache = response.clone();
+
+            caches.open(CACHE_NAME)
+              .then((cache) => {
+                cache.put(event.request, responseToCache);
+              });
+
             return response;
-          }
-
-          // Clone the response to cache it
-          const responseToCache = response.clone();
-
-          caches.open(CACHE_NAME)
-            .then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
-
-          return response;
-        }),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Network timeout')), 4000)
-      )
-    ])
+          }),
+        timeoutPromise
+      ])
+      .then(resolve)
+      .catch(reject);
+    })
     .catch(() => {
       // Network failed or timed out, try cache
       return caches.match(event.request)
@@ -72,7 +80,7 @@ self.addEventListener('fetch', (event) => {
             return cachedResponse;
           }
           // Both network and cache failed
-          return new Response('Offline - Please check your connection', {
+          return new Response('Content unavailable - Please try again later', {
             status: 503,
             statusText: 'Service Unavailable',
             headers: new Headers({
