@@ -1,4 +1,5 @@
 const CACHE_NAME = 'gift-card-manager-v2.0.1';
+const NETWORK_TIMEOUT_MS = 4000; // 4 seconds timeout for network requests
 const urlsToCache = [
   './',
   './index.html',
@@ -44,7 +45,7 @@ self.addEventListener('fetch', (event) => {
     new Promise((resolve, reject) => {
       let timeoutId;
       const timeoutPromise = new Promise((_, timeoutReject) => {
-        timeoutId = setTimeout(() => timeoutReject(new Error('Network timeout')), 4000);
+        timeoutId = setTimeout(() => timeoutReject(new Error('Network timeout')), NETWORK_TIMEOUT_MS);
       });
 
       Promise.race([
@@ -78,7 +79,10 @@ self.addEventListener('fetch', (event) => {
       .then(resolve)
       .catch(reject);
     })
-    .catch(() => {
+    .catch((error) => {
+      // Log error for debugging
+      console.log('Network request failed:', error.message, 'for', event.request.url);
+      
       // Network failed or timed out, try cache
       return caches.match(event.request)
         .then((cachedResponse) => {
