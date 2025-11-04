@@ -38,43 +38,48 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch event - network first, fallback to cache
+// Fetch event - network first with timeout, fallback to cache
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Check if we received a valid response
-        if (!response || response.status !== 200 || response.type !== 'basic') {
-          return response;
-        }
+    Promise.race([
+      fetch(event.request)
+        .then((response) => {
+          // Check if we received a valid response
+          if (!response || response.status !== 200 || response.type !== 'basic') {
+            return response;
+          }
 
-        // Clone the response to cache it
-        const responseToCache = response.clone();
+          // Clone the response to cache it
+          const responseToCache = response.clone();
 
-        caches.open(CACHE_NAME)
-          .then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-
-        return response;
-      })
-      .catch(() => {
-        // Network failed, try cache
-        return caches.match(event.request)
-          .then((cachedResponse) => {
-            if (cachedResponse) {
-              console.log('Serving from cache (offline):', event.request.url);
-              return cachedResponse;
-            }
-            // Both network and cache failed
-            return new Response('Offline - Please check your connection', {
-              status: 503,
-              statusText: 'Service Unavailable',
-              headers: new Headers({
-                'Content-Type': 'text/plain'
-              })
+          caches.open(CACHE_NAME)
+            .then((cache) => {
+              cache.put(event.request, responseToCache);
             });
+
+          return response;
+        }),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Network timeout')), 4000)
+      )
+    ])
+    .catch(() => {
+      // Network failed or timed out, try cache
+      return caches.match(event.request)
+        .then((cachedResponse) => {
+          if (cachedResponse) {
+            console.log('Serving from cache (network timeout or offline):', event.request.url);
+            return cachedResponse;
+          }
+          // Both network and cache failed
+          return new Response('Offline - Please check your connection', {
+            status: 503,
+            statusText: 'Service Unavailable',
+            headers: new Headers({
+              'Content-Type': 'text/plain'
+            })
           });
-      })
+        });
+    })
   );
 });
