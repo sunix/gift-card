@@ -44,13 +44,26 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     new Promise((resolve, reject) => {
       let timeoutId;
+      let timeoutCleared = false;
+      
+      const clearTimeoutOnce = () => {
+        if (!timeoutCleared) {
+          clearTimeout(timeoutId);
+          timeoutCleared = true;
+        }
+      };
+
       const timeoutPromise = new Promise((_, timeoutReject) => {
-        timeoutId = setTimeout(() => timeoutReject(new Error('Network timeout')), NETWORK_TIMEOUT_MS);
+        timeoutId = setTimeout(() => {
+          clearTimeoutOnce();
+          timeoutReject(new Error('Network timeout'));
+        }, NETWORK_TIMEOUT_MS);
       });
 
       Promise.race([
         fetch(event.request)
           .then((response) => {
+            clearTimeoutOnce();
             // Check if we received a valid response
             if (!response || response.status !== 200 || response.type !== 'basic') {
               return response;
@@ -69,8 +82,9 @@ self.addEventListener('fetch', (event) => {
 
             return response;
           })
-          .finally(() => {
-            clearTimeout(timeoutId);
+          .catch((error) => {
+            clearTimeoutOnce();
+            throw error;
           }),
         timeoutPromise
       ])
@@ -85,7 +99,7 @@ self.addEventListener('fetch', (event) => {
       return caches.match(event.request)
         .then((cachedResponse) => {
           if (cachedResponse) {
-            console.log('Serving from cache (network timeout or offline):', event.request.url);
+            console.log('Serving from cache:', event.request.url);
             return cachedResponse;
           }
           // Both network and cache failed
