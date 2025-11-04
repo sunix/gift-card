@@ -1,4 +1,5 @@
 const CACHE_NAME = 'gift-card-manager-v2.0.1';
+const NETWORK_TIMEOUT_MS = 4000; // 4 seconds timeout for network requests
 const urlsToCache = [
   './',
   './index.html',
@@ -38,43 +39,78 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch event - network first, fallback to cache
+// Fetch event - network first with timeout, fallback to cache
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Check if we received a valid response
-        if (!response || response.status !== 200 || response.type !== 'basic') {
-          return response;
+    new Promise((resolve, reject) => {
+      let timeoutId;
+      let timeoutCleared = false;
+      
+      const clearTimeoutOnce = () => {
+        if (!timeoutCleared) {
+          clearTimeout(timeoutId);
+          timeoutCleared = true;
         }
+      };
 
-        // Clone the response to cache it
-        const responseToCache = response.clone();
+      const timeoutPromise = new Promise((_, timeoutReject) => {
+        timeoutId = setTimeout(() => {
+          clearTimeoutOnce();
+          timeoutReject(new Error('Network timeout'));
+        }, NETWORK_TIMEOUT_MS);
+      });
 
-        caches.open(CACHE_NAME)
-          .then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-
-        return response;
-      })
-      .catch(() => {
-        // Network failed, try cache
-        return caches.match(event.request)
-          .then((cachedResponse) => {
-            if (cachedResponse) {
-              console.log('Serving from cache (offline):', event.request.url);
-              return cachedResponse;
+      Promise.race([
+        fetch(event.request)
+          .then((response) => {
+            clearTimeoutOnce();
+            // Check if we received a valid response
+            if (!response || response.status !== 200 || response.type !== 'basic') {
+              return response;
             }
-            // Both network and cache failed
-            return new Response('Offline - Please check your connection', {
-              status: 503,
-              statusText: 'Service Unavailable',
-              headers: new Headers({
-                'Content-Type': 'text/plain'
+
+            // Clone the response to cache it
+            const responseToCache = response.clone();
+
+            caches.open(CACHE_NAME)
+              .then((cache) => {
+                cache.put(event.request, responseToCache);
               })
-            });
+              .catch((error) => {
+                console.error('Failed to cache response:', error);
+              });
+
+            return response;
+          })
+          .catch((error) => {
+            clearTimeoutOnce();
+            throw error;
+          }),
+        timeoutPromise
+      ])
+      .then(resolve)
+      .catch(reject);
+    })
+    .catch((error) => {
+      // Log error for debugging
+      console.error('Network request failed:', error.message, 'for', event.request.url);
+      
+      // Network failed or timed out, try cache
+      return caches.match(event.request)
+        .then((cachedResponse) => {
+          if (cachedResponse) {
+            console.log('Serving from cache:', event.request.url);
+            return cachedResponse;
+          }
+          // Both network and cache failed
+          return new Response('Content unavailable - Please try again later', {
+            status: 503,
+            statusText: 'Service Unavailable',
+            headers: new Headers({
+              'Content-Type': 'text/plain'
+            })
           });
-      })
+        });
+    })
   );
 });
