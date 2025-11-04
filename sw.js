@@ -51,7 +51,6 @@ self.addEventListener('fetch', (event) => {
       Promise.race([
         fetch(event.request)
           .then((response) => {
-            clearTimeout(timeoutId);
             // Check if we received a valid response
             if (!response || response.status !== 200 || response.type !== 'basic') {
               return response;
@@ -70,9 +69,8 @@ self.addEventListener('fetch', (event) => {
 
             return response;
           })
-          .catch((error) => {
+          .finally(() => {
             clearTimeout(timeoutId);
-            throw error;
           }),
         timeoutPromise
       ])
@@ -81,7 +79,7 @@ self.addEventListener('fetch', (event) => {
     })
     .catch((error) => {
       // Log error for debugging
-      console.log('Network request failed:', error.message, 'for', event.request.url);
+      console.error('Network request failed:', error.message, 'for', event.request.url);
       
       // Network failed or timed out, try cache
       return caches.match(event.request)
