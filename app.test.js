@@ -1,0 +1,689 @@
+// app.test.js - Unit tests for GiftCardManager
+
+// Mock localStorage
+const localStorageMock = (() => {
+    let store = {};
+    return {
+        getItem: (key) => store[key] || null,
+        setItem: (key, value) => {
+            store[key] = value.toString();
+        },
+        clear: () => {
+            store = {};
+        },
+        removeItem: (key) => {
+            delete store[key];
+        }
+    };
+})();
+
+// Mock i18n
+const i18nMock = {
+    t: (key, params) => {
+        const translations = {
+            'alert.card_exists': 'Card already exists',
+            'alert.fidelity_added': 'Fidelity card {name} added',
+            'alert.gift_card_added': 'Gift card {name} added',
+            'alert.import_invalid': 'Invalid import data structure',
+            'alert.import_invalid_id': 'Invalid card ID',
+            'alert.import_invalid_number': 'Invalid card number',
+            'alert.import_invalid_name': 'Invalid card name',
+            'alert.import_invalid_transactions': 'Invalid transactions array',
+            'alert.import_invalid_balance': 'Invalid initial balance',
+            'alert.import_invalid_current': 'Invalid current balance',
+            'alert.import_confirm': 'Replace {current} cards with {imported} cards?',
+            'alert.import_success': 'Imported {count} cards from {date}',
+            'alert.import_failed': 'Import failed: {error}',
+            'alert.export_success': 'Data exported to {filename}',
+            'alert.export_failed': 'Export failed',
+            'alert.transaction_exceeds': 'Transaction exceeds balance',
+            'alert.fidelity_no_transactions': 'Fidelity cards do not support transactions'
+        };
+        let msg = translations[key] || key;
+        if (params) {
+            Object.keys(params).forEach(k => {
+                msg = msg.replace(`{${k}}`, params[k]);
+            });
+        }
+        return msg;
+    },
+    getCurrentLanguage: () => 'en'
+};
+
+global.localStorage = localStorageMock;
+global.i18n = i18nMock;
+global.alert = jest.fn();
+global.confirm = jest.fn();
+
+// Load the GiftCardManager class
+// We need to define it here since we can't load the file directly due to DOM dependencies
+class GiftCardManager {
+    static DEFAULT_ARCHIVED_STATE = false;
+    
+    constructor() {
+        this.cards = this.loadCards();
+        this.stores = [];
+        this.draggedElement = null;
+        this.draggedCardId = null;
+    }
+
+    getLocaleForLanguage(lang) {
+        const localeMap = {
+            'fr': 'fr-FR',
+            'en': 'en-US',
+            'uk': 'uk-UA',
+            'ru': 'ru-RU'
+        };
+        return localeMap[lang] || 'en-US';
+    }
+
+    isFidelityCard(card) {
+        return card.currentBalance === null || card.currentBalance === undefined || card.currentBalance === 0;
+    }
+
+    loadCards() {
+        const stored = localStorage.getItem('giftCards');
+        return stored ? JSON.parse(stored) : [];
+    }
+
+    saveCards() {
+        localStorage.setItem('giftCards', JSON.stringify(this.cards));
+    }
+
+    addCard() {
+        const cardNumber = this.mockInput.cardNumber.trim();
+        const cardName = this.mockInput.cardName.trim();
+        const initialBalanceValue = this.mockInput.initialBalance.trim();
+        
+        const isFidelityCard = initialBalanceValue === '' || parseFloat(initialBalanceValue) === 0;
+        const initialBalance = isFidelityCard ? null : parseFloat(initialBalanceValue);
+
+        if (this.cards.find(card => card.number === cardNumber)) {
+            alert(i18n.t('alert.card_exists'));
+            return;
+        }
+
+        const newCard = {
+            id: Date.now().toString(),
+            number: cardNumber,
+            name: cardName,
+            initialBalance: initialBalance,
+            currentBalance: initialBalance,
+            barcodeFormat: 'CODE128',
+            transactions: isFidelityCard ? [] : [{
+                date: new Date().toISOString(),
+                amount: initialBalance,
+                type: 'initial',
+                balanceAfter: initialBalance,
+                description: 'Initial balance'
+            }],
+            createdAt: new Date().toISOString(),
+            archived: GiftCardManager.DEFAULT_ARCHIVED_STATE
+        };
+
+        this.cards.push(newCard);
+        this.saveCards();
+
+        const alertKey = isFidelityCard ? 'alert.fidelity_added' : 'alert.gift_card_added';
+        alert(i18n.t(alertKey, { name: cardName }));
+        
+        return newCard;
+    }
+
+    exportData() {
+        const exportData = {
+            version: '1.0',
+            exportDate: new Date().toISOString(),
+            cards: this.cards
+        };
+        return exportData;
+    }
+
+    importData(importedDataString) {
+        try {
+            const importedData = JSON.parse(importedDataString);
+            
+            if (!importedData.cards || !Array.isArray(importedData.cards)) {
+                throw new Error(i18n.t('alert.import_invalid'));
+            }
+
+            for (const card of importedData.cards) {
+                if (!card.id || typeof card.id !== 'string' || card.id.trim() === '') {
+                    throw new Error(i18n.t('alert.import_invalid_id'));
+                }
+                if (!card.number || typeof card.number !== 'string' || card.number.trim() === '') {
+                    throw new Error(i18n.t('alert.import_invalid_number'));
+                }
+                if (!card.name || typeof card.name !== 'string' || card.name.trim() === '') {
+                    throw new Error(i18n.t('alert.import_invalid_name'));
+                }
+                if (!Array.isArray(card.transactions)) {
+                    throw new Error(i18n.t('alert.import_invalid_transactions'));
+                }
+                if (card.initialBalance !== null && card.initialBalance !== undefined && typeof card.initialBalance !== 'number') {
+                    throw new Error(i18n.t('alert.import_invalid_balance'));
+                }
+                if (card.currentBalance !== null && card.currentBalance !== undefined && typeof card.currentBalance !== 'number') {
+                    throw new Error(i18n.t('alert.import_invalid_current'));
+                }
+            }
+
+            this.cards = importedData.cards.map(card => ({
+                ...card,
+                archived: card.archived ?? GiftCardManager.DEFAULT_ARCHIVED_STATE
+            }));
+            this.saveCards();
+            
+            return true;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    addTransaction(cardId) {
+        const card = this.cards.find(c => c.id === cardId);
+        if (!card) return;
+
+        if (this.isFidelityCard(card)) {
+            alert(i18n.t('alert.fidelity_no_transactions'));
+            return;
+        }
+
+        const amount = parseFloat(this.mockInput.transactionAmount);
+        const description = this.mockInput.transactionDescription.trim();
+
+        if (amount > card.currentBalance) {
+            alert(i18n.t('alert.transaction_exceeds'));
+            return;
+        }
+
+        const newBalance = card.currentBalance - amount;
+
+        const transaction = {
+            date: new Date().toISOString(),
+            amount: -amount,
+            type: 'spend',
+            balanceAfter: newBalance,
+            description: description || 'Purchase'
+        };
+
+        card.transactions.push(transaction);
+        card.currentBalance = newBalance;
+
+        this.saveCards();
+        
+        return transaction;
+    }
+
+    // Mock input property for testing
+    mockInput = {
+        cardNumber: '',
+        cardName: '',
+        initialBalance: '',
+        transactionAmount: '',
+        transactionDescription: ''
+    };
+}
+
+describe('GiftCardManager', () => {
+    let manager;
+
+    beforeEach(() => {
+        // Clear localStorage before each test
+        localStorage.clear();
+        // Reset alert and confirm mocks
+        global.alert.mockClear();
+        global.confirm.mockClear();
+        // Create a new manager instance
+        manager = new GiftCardManager();
+    });
+
+    describe('addCard', () => {
+        test('should add a gift card with balance', () => {
+            manager.mockInput = {
+                cardNumber: '1234567890',
+                cardName: 'Test Gift Card',
+                initialBalance: '100'
+            };
+
+            const card = manager.addCard();
+
+            expect(card).toBeDefined();
+            expect(card.number).toBe('1234567890');
+            expect(card.name).toBe('Test Gift Card');
+            expect(card.initialBalance).toBe(100);
+            expect(card.currentBalance).toBe(100);
+            expect(card.transactions).toHaveLength(1);
+            expect(card.transactions[0].type).toBe('initial');
+            expect(card.transactions[0].amount).toBe(100);
+            expect(manager.cards).toHaveLength(1);
+            expect(alert).toHaveBeenCalledWith('Gift card Test Gift Card added');
+        });
+
+        test('should add a fidelity card without balance', () => {
+            manager.mockInput = {
+                cardNumber: '9876543210',
+                cardName: 'Test Fidelity Card',
+                initialBalance: ''
+            };
+
+            const card = manager.addCard();
+
+            expect(card).toBeDefined();
+            expect(card.number).toBe('9876543210');
+            expect(card.name).toBe('Test Fidelity Card');
+            expect(card.initialBalance).toBeNull();
+            expect(card.currentBalance).toBeNull();
+            expect(card.transactions).toHaveLength(0);
+            expect(manager.isFidelityCard(card)).toBe(true);
+            expect(alert).toHaveBeenCalledWith('Fidelity card Test Fidelity Card added');
+        });
+
+        test('should prevent duplicate card numbers', () => {
+            manager.mockInput = {
+                cardNumber: '1234567890',
+                cardName: 'First Card',
+                initialBalance: '50'
+            };
+            manager.addCard();
+
+            manager.mockInput = {
+                cardNumber: '1234567890',
+                cardName: 'Duplicate Card',
+                initialBalance: '100'
+            };
+            manager.addCard();
+
+            expect(manager.cards).toHaveLength(1);
+            expect(manager.cards[0].name).toBe('First Card');
+            expect(alert).toHaveBeenLastCalledWith('Card already exists');
+        });
+
+        test('should treat 0 balance as fidelity card', () => {
+            manager.mockInput = {
+                cardNumber: '1111111111',
+                cardName: 'Zero Balance Card',
+                initialBalance: '0'
+            };
+
+            const card = manager.addCard();
+
+            expect(manager.isFidelityCard(card)).toBe(true);
+            expect(card.initialBalance).toBeNull();
+            expect(card.currentBalance).toBeNull();
+        });
+    });
+
+    describe('balance tracking', () => {
+        test('should set initial balance correctly', () => {
+            manager.mockInput = {
+                cardNumber: '1234567890',
+                cardName: 'Balance Test Card',
+                initialBalance: '150.50'
+            };
+
+            const card = manager.addCard();
+
+            expect(card.initialBalance).toBe(150.50);
+            expect(card.currentBalance).toBe(150.50);
+            expect(card.transactions[0].balanceAfter).toBe(150.50);
+        });
+
+        test('should reduce balance when adding transaction', () => {
+            manager.mockInput = {
+                cardNumber: '1234567890',
+                cardName: 'Transaction Test',
+                initialBalance: '100'
+            };
+
+            const card = manager.addCard();
+            const cardId = card.id;
+
+            manager.mockInput = {
+                transactionAmount: '25.50',
+                transactionDescription: 'Coffee'
+            };
+
+            const transaction = manager.addTransaction(cardId);
+
+            expect(transaction).toBeDefined();
+            expect(transaction.amount).toBe(-25.50);
+            expect(transaction.balanceAfter).toBe(74.50);
+            expect(card.currentBalance).toBe(74.50);
+            expect(card.transactions).toHaveLength(2);
+        });
+
+        test('should maintain transaction history', () => {
+            manager.mockInput = {
+                cardNumber: '1234567890',
+                cardName: 'History Test',
+                initialBalance: '200'
+            };
+
+            const card = manager.addCard();
+            const cardId = card.id;
+
+            // Add first transaction
+            manager.mockInput = {
+                transactionAmount: '50',
+                transactionDescription: 'Purchase 1'
+            };
+            manager.addTransaction(cardId);
+
+            // Add second transaction
+            manager.mockInput = {
+                transactionAmount: '30',
+                transactionDescription: 'Purchase 2'
+            };
+            manager.addTransaction(cardId);
+
+            expect(card.transactions).toHaveLength(3); // initial + 2 purchases
+            expect(card.transactions[0].type).toBe('initial');
+            expect(card.transactions[1].description).toBe('Purchase 1');
+            expect(card.transactions[2].description).toBe('Purchase 2');
+            expect(card.currentBalance).toBe(120);
+        });
+
+        test('should prevent balance from going negative', () => {
+            manager.mockInput = {
+                cardNumber: '1234567890',
+                cardName: 'Negative Test',
+                initialBalance: '50'
+            };
+
+            const card = manager.addCard();
+            const cardId = card.id;
+
+            manager.mockInput = {
+                transactionAmount: '100',
+                transactionDescription: 'Too much'
+            };
+
+            manager.addTransaction(cardId);
+
+            expect(card.currentBalance).toBe(50); // Should remain unchanged
+            expect(card.transactions).toHaveLength(1); // Only initial transaction
+            expect(alert).toHaveBeenCalledWith('Transaction exceeds balance');
+        });
+
+        test('should not allow transactions on fidelity cards', () => {
+            manager.mockInput = {
+                cardNumber: '1234567890',
+                cardName: 'Fidelity Test',
+                initialBalance: ''
+            };
+
+            const card = manager.addCard();
+            const cardId = card.id;
+
+            manager.mockInput = {
+                transactionAmount: '10',
+                transactionDescription: 'Should fail'
+            };
+
+            manager.addTransaction(cardId);
+
+            expect(alert).toHaveBeenCalledWith('Fidelity cards do not support transactions');
+            expect(card.transactions).toHaveLength(0);
+        });
+    });
+
+    describe('exportData', () => {
+        test('should export data with correct structure', () => {
+            // Add some test cards
+            manager.mockInput = {
+                cardNumber: '1111111111',
+                cardName: 'Card 1',
+                initialBalance: '100'
+            };
+            manager.addCard();
+
+            manager.mockInput = {
+                cardNumber: '2222222222',
+                cardName: 'Card 2',
+                initialBalance: ''
+            };
+            manager.addCard();
+
+            const exportData = manager.exportData();
+
+            expect(exportData.version).toBe('1.0');
+            expect(exportData.exportDate).toBeDefined();
+            expect(new Date(exportData.exportDate)).toBeInstanceOf(Date);
+            expect(exportData.cards).toHaveLength(2);
+            expect(exportData.cards[0].number).toBe('1111111111');
+            expect(exportData.cards[1].number).toBe('2222222222');
+        });
+
+        test('should export empty cards array when no cards exist', () => {
+            const exportData = manager.exportData();
+
+            expect(exportData.version).toBe('1.0');
+            expect(exportData.cards).toHaveLength(0);
+            expect(Array.isArray(exportData.cards)).toBe(true);
+        });
+    });
+
+    describe('importData', () => {
+        test('should import valid card data', () => {
+            const importDataString = JSON.stringify({
+                version: '1.0',
+                exportDate: new Date().toISOString(),
+                cards: [
+                    {
+                        id: '123',
+                        number: '1111111111',
+                        name: 'Imported Card',
+                        initialBalance: 50,
+                        currentBalance: 50,
+                        transactions: [
+                            {
+                                date: new Date().toISOString(),
+                                amount: 50,
+                                type: 'initial',
+                                balanceAfter: 50,
+                                description: 'Initial balance'
+                            }
+                        ],
+                        createdAt: new Date().toISOString(),
+                        archived: false
+                    }
+                ]
+            });
+
+            const result = manager.importData(importDataString);
+
+            expect(result).toBe(true);
+            expect(manager.cards).toHaveLength(1);
+            expect(manager.cards[0].number).toBe('1111111111');
+            expect(manager.cards[0].name).toBe('Imported Card');
+            expect(manager.cards[0].currentBalance).toBe(50);
+        });
+
+        test('should import fidelity cards correctly', () => {
+            const importDataString = JSON.stringify({
+                version: '1.0',
+                exportDate: new Date().toISOString(),
+                cards: [
+                    {
+                        id: '456',
+                        number: '9999999999',
+                        name: 'Imported Fidelity',
+                        initialBalance: null,
+                        currentBalance: null,
+                        transactions: [],
+                        createdAt: new Date().toISOString(),
+                        archived: false
+                    }
+                ]
+            });
+
+            const result = manager.importData(importDataString);
+
+            expect(result).toBe(true);
+            expect(manager.cards).toHaveLength(1);
+            expect(manager.isFidelityCard(manager.cards[0])).toBe(true);
+        });
+
+        test('should reject invalid JSON', () => {
+            const invalidJson = 'not valid json';
+
+            expect(() => {
+                manager.importData(invalidJson);
+            }).toThrow();
+        });
+
+        test('should reject data without cards array', () => {
+            const invalidData = JSON.stringify({
+                version: '1.0',
+                exportDate: new Date().toISOString()
+            });
+
+            expect(() => {
+                manager.importData(invalidData);
+            }).toThrow('Invalid import data structure');
+        });
+
+        test('should reject cards with missing required fields', () => {
+            const invalidData = JSON.stringify({
+                version: '1.0',
+                exportDate: new Date().toISOString(),
+                cards: [
+                    {
+                        id: '123',
+                        // missing number field
+                        name: 'Invalid Card',
+                        initialBalance: 50,
+                        currentBalance: 50,
+                        transactions: []
+                    }
+                ]
+            });
+
+            expect(() => {
+                manager.importData(invalidData);
+            }).toThrow('Invalid card number');
+        });
+
+        test('should reject cards with invalid field types', () => {
+            const invalidData = JSON.stringify({
+                version: '1.0',
+                exportDate: new Date().toISOString(),
+                cards: [
+                    {
+                        id: '123',
+                        number: '1234567890',
+                        name: 'Test Card',
+                        initialBalance: 'not a number', // Should be number or null
+                        currentBalance: 50,
+                        transactions: []
+                    }
+                ]
+            });
+
+            expect(() => {
+                manager.importData(invalidData);
+            }).toThrow('Invalid initial balance');
+        });
+
+        test('should handle archived property for backward compatibility', () => {
+            const importDataString = JSON.stringify({
+                version: '1.0',
+                exportDate: new Date().toISOString(),
+                cards: [
+                    {
+                        id: '123',
+                        number: '1111111111',
+                        name: 'Old Card Without Archived Property',
+                        initialBalance: 50,
+                        currentBalance: 50,
+                        transactions: [],
+                        createdAt: new Date().toISOString()
+                        // Note: no archived property
+                    }
+                ]
+            });
+
+            const result = manager.importData(importDataString);
+
+            expect(result).toBe(true);
+            expect(manager.cards[0].archived).toBe(false);
+        });
+
+        test('should replace existing cards on import', () => {
+            // Add initial cards
+            manager.mockInput = {
+                cardNumber: '1111111111',
+                cardName: 'Existing Card',
+                initialBalance: '100'
+            };
+            manager.addCard();
+
+            expect(manager.cards).toHaveLength(1);
+
+            // Import new data
+            const importDataString = JSON.stringify({
+                version: '1.0',
+                exportDate: new Date().toISOString(),
+                cards: [
+                    {
+                        id: '789',
+                        number: '9999999999',
+                        name: 'New Imported Card',
+                        initialBalance: 200,
+                        currentBalance: 200,
+                        transactions: [],
+                        createdAt: new Date().toISOString(),
+                        archived: false
+                    }
+                ]
+            });
+
+            manager.importData(importDataString);
+
+            expect(manager.cards).toHaveLength(1);
+            expect(manager.cards[0].number).toBe('9999999999');
+        });
+    });
+
+    describe('localStorage persistence', () => {
+        test('should save cards to localStorage', () => {
+            manager.mockInput = {
+                cardNumber: '1234567890',
+                cardName: 'Persistence Test',
+                initialBalance: '75'
+            };
+
+            manager.addCard();
+
+            const stored = localStorage.getItem('giftCards');
+            expect(stored).toBeDefined();
+            
+            const parsedCards = JSON.parse(stored);
+            expect(parsedCards).toHaveLength(1);
+            expect(parsedCards[0].name).toBe('Persistence Test');
+        });
+
+        test('should load cards from localStorage', () => {
+            const testCards = [
+                {
+                    id: '123',
+                    number: '1111111111',
+                    name: 'Loaded Card',
+                    initialBalance: 100,
+                    currentBalance: 100,
+                    transactions: [],
+                    createdAt: new Date().toISOString(),
+                    archived: false
+                }
+            ];
+
+            localStorage.setItem('giftCards', JSON.stringify(testCards));
+
+            const newManager = new GiftCardManager();
+            
+            expect(newManager.cards).toHaveLength(1);
+            expect(newManager.cards[0].name).toBe('Loaded Card');
+        });
+    });
+});

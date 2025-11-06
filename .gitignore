@@ -23,5 +23,8 @@ Thumbs.db
 tmp/
 temp/
 
+# Test coverage
+coverage/
+
 # Icon generation script (temporary)
 generate-icons.js
