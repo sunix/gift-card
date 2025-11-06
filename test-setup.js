@@ -121,5 +121,3 @@ global.i18n = {
   }),
   getCurrentLanguage: jest.fn(() => 'en')
 };
-
-
