@@ -134,6 +134,38 @@ Keep your active card list organized by archiving cards you no longer use regula
 - **Service Worker**: Offline functionality and caching for PWA features
 - **Web App Manifest**: PWA installation support for mobile and desktop
 - **i18n System**: Multi-language support with dynamic translation loading
+- **Jest**: Testing framework with jsdom for comprehensive unit tests
+
+## Testing
+
+This project includes comprehensive unit tests to ensure functionality works as expected.
+
+### Running Tests
+
+```bash
+# Install dependencies (if not already installed)
+npm install
+
+# Run all tests
+npm test
+
+# Run tests in watch mode (auto-rerun on changes)
+npm run test:watch
+
+# Run tests with coverage report
+npm run test:coverage
+```
+
+### Test Coverage
+
+The test suite covers:
+- ✅ **Adding new cards**: Gift cards with balances and fidelity cards without balances
+- ✅ **Balance tracking**: Transaction recording, balance updates, and validation
+- ✅ **Import/Export**: Data backup and restore with validation
+- ✅ **LocalStorage integration**: Data persistence and retrieval
+- ✅ **Card management**: Archiving, unarchiving, and deleting cards
+
+All tests use Jest with jsdom to simulate the browser environment.
 
 ## Supported Stores
 

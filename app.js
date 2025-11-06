@@ -830,18 +830,25 @@ class GiftCardManager {
 let giftCardManager;
 
 // Wait for i18n to be ready before initializing the app
-window.addEventListener('i18nReady', async () => {
-    giftCardManager = new GiftCardManager();
-    await giftCardManager.init();
-    
-    // Register service worker for PWA functionality
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js')
-            .then((registration) => {
-                console.log('Service Worker registered successfully:', registration.scope);
-            })
-            .catch((error) => {
-                console.log('Service Worker registration failed:', error);
-            });
-    }
-});
+if (typeof window !== 'undefined') {
+    window.addEventListener('i18nReady', async () => {
+        giftCardManager = new GiftCardManager();
+        await giftCardManager.init();
+        
+        // Register service worker for PWA functionality
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js')
+                .then((registration) => {
+                    console.log('Service Worker registered successfully:', registration.scope);
+                })
+                .catch((error) => {
+                    console.log('Service Worker registration failed:', error);
+                });
+        }
+    });
+}
+
+// Export for testing in Node.js environment
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { GiftCardManager };
+}
