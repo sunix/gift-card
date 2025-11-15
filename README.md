@@ -179,6 +179,22 @@ To add a new store to the recognition system:
 
 See `STORE_LOGOS.md` for more details about the logo system and CORS considerations.
 
+## Testing
+
+The application includes comprehensive unit tests covering:
+- Import/Export functionality
+- Adding new cards (gift cards and fidelity cards)
+- Balance tracking and transaction management
+- Data validation and persistence
+
+To run the tests:
+```bash
+npm install
+npm test
+```
+
+See `TESTING.md` for detailed information about the test suite and coverage.
+
 ## Browser Compatibility
 
 Works on all modern browsers that support:
