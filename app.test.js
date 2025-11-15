@@ -38,8 +38,10 @@ const i18nMock = {
             'alert.export_failed': 'Export failed',
             'alert.transaction_exceeds': 'Transaction exceeds balance',
             'alert.fidelity_no_transactions': 'Fidelity cards do not support transactions',
-            'alert.reset_balance_confirm': 'Reset balance to €{amount}?',
-            'alert.reset_balance_success': 'Balance reset to €{amount}'
+            'alert.reset_balance_prompt': 'Enter the new balance amount (default is initial balance of €{initial}):',
+            'alert.reset_balance_invalid': 'Invalid amount. Please enter a valid positive number.',
+            'alert.reset_balance_success': 'Balance reset to €{amount}',
+            'transaction.reset_description': 'Balance reset to €{amount}'
         };
         let msg = translations[key] || key;
         if (params) {
@@ -56,6 +58,7 @@ global.localStorage = localStorageMock;
 global.i18n = i18nMock;
 global.alert = jest.fn();
 global.confirm = jest.fn();
+global.prompt = jest.fn();
 
 // Load the GiftCardManager class
 // We need to define it here since we can't load the file directly due to DOM dependencies
@@ -226,24 +229,35 @@ class GiftCardManager {
             return;
         }
 
-        if (!confirm(i18n.t('alert.reset_balance_confirm', { amount: card.initialBalance.toFixed(2) }))) {
+        const newBalanceInput = prompt(
+            i18n.t('alert.reset_balance_prompt', { initial: card.initialBalance.toFixed(2) }), 
+            card.initialBalance.toFixed(2)
+        );
+
+        if (newBalanceInput === null) {
+            return;
+        }
+
+        const newBalance = parseFloat(newBalanceInput);
+        if (isNaN(newBalance) || newBalance < 0) {
+            alert(i18n.t('alert.reset_balance_invalid'));
             return;
         }
 
         const transaction = {
             date: new Date().toISOString(),
-            amount: card.initialBalance - card.currentBalance,
+            amount: newBalance - card.currentBalance,
             type: 'reset',
-            balanceAfter: card.initialBalance,
-            description: 'Balance reset to initial amount'
+            balanceAfter: newBalance,
+            description: i18n.t('transaction.reset_description', { amount: newBalance.toFixed(2) })
         };
 
         card.transactions.push(transaction);
-        card.currentBalance = card.initialBalance;
+        card.currentBalance = newBalance;
 
         this.saveCards();
         
-        alert(i18n.t('alert.reset_balance_success', { amount: card.initialBalance.toFixed(2) }));
+        alert(i18n.t('alert.reset_balance_success', { amount: newBalance.toFixed(2) }));
         
         return transaction;
     }
@@ -264,9 +278,10 @@ describe('GiftCardManager', () => {
     beforeEach(() => {
         // Clear localStorage before each test
         localStorage.clear();
-        // Reset alert and confirm mocks
+        // Reset alert, confirm, and prompt mocks
         global.alert.mockClear();
         global.confirm.mockClear();
+        global.prompt.mockClear();
         // Create a new manager instance
         manager = new GiftCardManager();
     });
@@ -699,8 +714,8 @@ describe('GiftCardManager', () => {
 
             expect(card.currentBalance).toBe(70);
 
-            // Mock confirm to return true
-            global.confirm.mockReturnValue(true);
+            // Mock prompt to return initial balance
+            global.prompt.mockReturnValue('100');
 
             // Reset balance
             const resetTransaction = manager.resetBalance(cardId);
@@ -712,6 +727,39 @@ describe('GiftCardManager', () => {
             expect(card.currentBalance).toBe(100);
             expect(card.transactions).toHaveLength(3); // initial + spend + reset
             expect(alert).toHaveBeenCalledWith('Balance reset to €100.00');
+        });
+
+        test('should reset balance to custom amount', () => {
+            manager.mockInput = {
+                cardNumber: '1234567890',
+                cardName: 'Custom Reset Test',
+                initialBalance: '100'
+            };
+            const card = manager.addCard();
+            const cardId = card.id;
+
+            // Spend some money
+            manager.mockInput = {
+                transactionAmount: '40',
+                transactionDescription: 'Purchase'
+            };
+            manager.addTransaction(cardId);
+
+            expect(card.currentBalance).toBe(60);
+
+            // Mock prompt to return custom amount (75)
+            global.prompt.mockReturnValue('75');
+
+            // Reset balance
+            const resetTransaction = manager.resetBalance(cardId);
+
+            expect(resetTransaction).toBeDefined();
+            expect(resetTransaction.type).toBe('reset');
+            expect(resetTransaction.amount).toBe(15); // 75 - 60
+            expect(resetTransaction.balanceAfter).toBe(75);
+            expect(card.currentBalance).toBe(75);
+            expect(card.transactions).toHaveLength(3); // initial + spend + reset
+            expect(alert).toHaveBeenCalledWith('Balance reset to €75.00');
         });
 
         test('should not reset balance when user cancels', () => {
@@ -730,8 +778,8 @@ describe('GiftCardManager', () => {
             };
             manager.addTransaction(cardId);
 
-            // Mock confirm to return false
-            global.confirm.mockReturnValue(false);
+            // Mock prompt to return null (user cancelled)
+            global.prompt.mockReturnValue(null);
 
             // Try to reset balance
             const result = manager.resetBalance(cardId);
@@ -739,6 +787,44 @@ describe('GiftCardManager', () => {
             expect(result).toBeUndefined();
             expect(card.currentBalance).toBe(70); // Should remain unchanged
             expect(card.transactions).toHaveLength(2); // Only initial + spend
+        });
+
+        test('should reject invalid amounts', () => {
+            manager.mockInput = {
+                cardNumber: '1234567890',
+                cardName: 'Invalid Amount Test',
+                initialBalance: '100'
+            };
+            const card = manager.addCard();
+            const cardId = card.id;
+
+            // Mock prompt to return invalid value
+            global.prompt.mockReturnValue('invalid');
+
+            manager.resetBalance(cardId);
+
+            expect(alert).toHaveBeenCalledWith('Invalid amount. Please enter a valid positive number.');
+            expect(card.currentBalance).toBe(100); // Should remain unchanged
+            expect(card.transactions).toHaveLength(1); // Only initial
+        });
+
+        test('should reject negative amounts', () => {
+            manager.mockInput = {
+                cardNumber: '1234567890',
+                cardName: 'Negative Amount Test',
+                initialBalance: '100'
+            };
+            const card = manager.addCard();
+            const cardId = card.id;
+
+            // Mock prompt to return negative value
+            global.prompt.mockReturnValue('-50');
+
+            manager.resetBalance(cardId);
+
+            expect(alert).toHaveBeenCalledWith('Invalid amount. Please enter a valid positive number.');
+            expect(card.currentBalance).toBe(100); // Should remain unchanged
+            expect(card.transactions).toHaveLength(1); // Only initial
         });
 
         test('should not allow reset on fidelity cards', () => {
@@ -765,8 +851,8 @@ describe('GiftCardManager', () => {
             const card = manager.addCard();
             const cardId = card.id;
 
-            // Mock confirm to return true
-            global.confirm.mockReturnValue(true);
+            // Mock prompt to return initial balance
+            global.prompt.mockReturnValue('100');
 
             // Reset balance when it's already at initial
             const resetTransaction = manager.resetBalance(cardId);
@@ -802,8 +888,8 @@ describe('GiftCardManager', () => {
 
             expect(card.currentBalance).toBe(75);
 
-            // Mock confirm to return true
-            global.confirm.mockReturnValue(true);
+            // Mock prompt to return initial balance
+            global.prompt.mockReturnValue('150');
 
             // Reset balance
             manager.resetBalance(cardId);
@@ -813,7 +899,7 @@ describe('GiftCardManager', () => {
             
             const resetTx = card.transactions[3];
             expect(resetTx.type).toBe('reset');
-            expect(resetTx.description).toBe('Balance reset to initial amount');
+            expect(resetTx.description).toBe('Balance reset to €150.00');
             expect(resetTx.balanceAfter).toBe(150);
         });
     });

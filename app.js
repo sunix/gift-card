@@ -607,7 +607,7 @@ class GiftCardManager {
         this.renderCards(); // Refresh the cards list
     }
 
-    // Reset balance to initial balance
+    // Reset balance to a custom value (default: initial balance)
     resetBalance(cardId) {
         const card = this.cards.find(c => c.id === cardId);
         if (!card) return;
@@ -618,29 +618,42 @@ class GiftCardManager {
             return;
         }
 
-        // Confirm reset
-        if (!confirm(i18n.t('alert.reset_balance_confirm', { amount: card.initialBalance.toFixed(2) }))) {
+        // Prompt user for new balance amount with initial balance as default
+        const newBalanceInput = prompt(
+            i18n.t('alert.reset_balance_prompt', { initial: card.initialBalance.toFixed(2) }), 
+            card.initialBalance.toFixed(2)
+        );
+
+        // User cancelled
+        if (newBalanceInput === null) {
+            return;
+        }
+
+        // Validate input
+        const newBalance = parseFloat(newBalanceInput);
+        if (isNaN(newBalance) || newBalance < 0) {
+            alert(i18n.t('alert.reset_balance_invalid'));
             return;
         }
 
         // Create a reset transaction
         const transaction = {
             date: new Date().toISOString(),
-            amount: card.initialBalance - card.currentBalance, // Difference to add
+            amount: newBalance - card.currentBalance, // Difference to add
             type: 'reset',
-            balanceAfter: card.initialBalance,
-            description: 'Balance reset to initial amount'
+            balanceAfter: newBalance,
+            description: i18n.t('transaction.reset_description', { amount: newBalance.toFixed(2) })
         };
 
         card.transactions.push(transaction);
-        card.currentBalance = card.initialBalance;
+        card.currentBalance = newBalance;
 
         this.saveCards();
         this.showCardDetail(cardId); // Refresh the modal
         this.renderCards(); // Refresh the cards list
         
         // Show success message
-        alert(i18n.t('alert.reset_balance_success', { amount: card.initialBalance.toFixed(2) }));
+        alert(i18n.t('alert.reset_balance_success', { amount: newBalance.toFixed(2) }));
     }
 
     // Delete a card
