@@ -530,6 +530,17 @@ class GiftCardManager {
                 }
                 <button class="btn btn-danger btn-small" onclick="giftCardManager.deleteCard('${card.id}')">${i18n.t('card.delete_button')}</button>
             </div>
+            ${!this.isFidelityCard(card) 
+                ? `<div id="expiryDateEditForm" style="display: none; margin-top: 15px; padding: 15px; background: #f0f8ff; border-radius: 8px; border: 2px solid #e0e0e0;">
+                    <div style="margin-bottom: 10px;">
+                        <label for="expiryDateInput" style="display: block; margin-bottom: 5px; font-weight: 600;">${i18n.t('card.expiry_date')}</label>
+                        <input type="date" id="expiryDateInput" value="${card.expiryDate || ''}" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%; max-width: 250px;">
+                    </div>
+                    <button class="btn btn-secondary btn-small" onclick="giftCardManager.saveExpiryDate('${card.id}')">${i18n.t('card.save_expiry')}</button>
+                    <button class="btn btn-secondary btn-small" onclick="giftCardManager.toggleExpiryDateEdit('${card.id}')">${i18n.t('card.cancel_edit')}</button>
+                </div>`
+                : ''
+            }
         `;
 
         // Generate barcode using bwip-js
@@ -596,15 +607,6 @@ class GiftCardManager {
         }
         
         expiryHTML += `</p>`;
-        
-        // Hidden edit form
-        expiryHTML += `
-            <div id="expiryDateEditForm" style="display: none; margin-top: 10px;">
-                <input type="date" id="expiryDateInput" value="${card.expiryDate || ''}" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-right: 10px;">
-                <button class="btn btn-secondary btn-small" onclick="giftCardManager.saveExpiryDate('${card.id}')">${i18n.t('card.save_expiry')}</button>
-                <button class="btn btn-secondary btn-small" onclick="giftCardManager.toggleExpiryDateEdit('${card.id}')">${i18n.t('card.cancel_edit')}</button>
-            </div>
-        `;
         expiryHTML += '</div>';
         
         return expiryHTML;
