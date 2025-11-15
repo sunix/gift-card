@@ -59,6 +59,7 @@
   "card.description_placeholder": "ex: Café chez Starbucks",
   "card.record_button": "Enregistrer la Transaction",
   "card.transaction_history": "Historique des Transactions",
+  "card.reset_balance_button": "Réinitialiser le Solde",
   "card.archive_button": "Archiver la Carte",
   "card.unarchive_button": "Désarchiver la Carte",
   "card.delete_button": "Supprimer la Carte",
@@ -66,12 +67,15 @@
   
   "transaction.initial_balance": "Solde Initial : {amount} €",
   "transaction.spent": "Dépensé : {amount} €",
+  "transaction.reset": "Solde Réinitialisé : {amount} €",
   "transaction.balance_after": "Solde après : {amount} €",
   
   "alert.card_exists": "Une carte avec ce numéro existe déjà !",
   "alert.fidelity_added": "Carte de fidélité \"{name}\" ajoutée avec succès !",
   "alert.gift_card_added": "Carte cadeau \"{name}\" ajoutée avec succès !",
   "alert.transaction_exceeds": "Le montant de la transaction dépasse le solde actuel !",
+  "alert.reset_balance_confirm": "Êtes-vous sûr de vouloir réinitialiser le solde au montant initial de {amount} € ?",
+  "alert.reset_balance_success": "Le solde a été réinitialisé à {amount} €",
   "alert.delete_confirm": "Êtes-vous sûr de vouloir supprimer cette carte cadeau ? Cette action ne peut pas être annulée.",
   "alert.export_success": "Données exportées avec succès vers {filename}",
   "alert.export_failed": "Échec de l'exportation des données. Veuillez réessayer.",

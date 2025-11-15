@@ -59,6 +59,7 @@
   "card.description_placeholder": "наприклад, Кава у Starbucks",
   "card.record_button": "Записати Транзакцію",
   "card.transaction_history": "Історія Транзакцій",
+  "card.reset_balance_button": "Скинути Баланс",
   "card.archive_button": "Архівувати Картку",
   "card.unarchive_button": "Розархівувати Картку",
   "card.delete_button": "Видалити Картку",
@@ -66,12 +67,15 @@
   
   "transaction.initial_balance": "Початковий Баланс: €{amount}",
   "transaction.spent": "Витрачено: €{amount}",
+  "transaction.reset": "Баланс Скинуто: €{amount}",
   "transaction.balance_after": "Баланс після: €{amount}",
   
   "alert.card_exists": "Картка з таким номером вже існує!",
   "alert.fidelity_added": "Дисконтну картку \"{name}\" успішно додано!",
   "alert.gift_card_added": "Подарункову картку \"{name}\" успішно додано!",
   "alert.transaction_exceeds": "Сума транзакції перевищує поточний баланс!",
+  "alert.reset_balance_confirm": "Ви впевнені, що хочете скинути баланс до початкової суми в €{amount}?",
+  "alert.reset_balance_success": "Баланс скинуто до €{amount}",
   "alert.delete_confirm": "Ви впевнені, що хочете видалити цю подарункову картку? Цю дію неможливо скасувати.",
   "alert.export_success": "Дані успішно експортовано до {filename}",
   "alert.export_failed": "Не вдалося експортувати дані. Будь ласка, спробуйте ще раз.",

@@ -37,7 +37,9 @@ const i18nMock = {
             'alert.export_success': 'Data exported to {filename}',
             'alert.export_failed': 'Export failed',
             'alert.transaction_exceeds': 'Transaction exceeds balance',
-            'alert.fidelity_no_transactions': 'Fidelity cards do not support transactions'
+            'alert.fidelity_no_transactions': 'Fidelity cards do not support transactions',
+            'alert.reset_balance_confirm': 'Reset balance to €{amount}?',
+            'alert.reset_balance_success': 'Balance reset to €{amount}'
         };
         let msg = translations[key] || key;
         if (params) {
@@ -211,6 +213,37 @@ class GiftCardManager {
         card.currentBalance = newBalance;
 
         this.saveCards();
+        
+        return transaction;
+    }
+
+    resetBalance(cardId) {
+        const card = this.cards.find(c => c.id === cardId);
+        if (!card) return;
+
+        if (this.isFidelityCard(card)) {
+            alert(i18n.t('alert.fidelity_no_transactions'));
+            return;
+        }
+
+        if (!confirm(i18n.t('alert.reset_balance_confirm', { amount: card.initialBalance.toFixed(2) }))) {
+            return;
+        }
+
+        const transaction = {
+            date: new Date().toISOString(),
+            amount: card.initialBalance - card.currentBalance,
+            type: 'reset',
+            balanceAfter: card.initialBalance,
+            description: 'Balance reset to initial amount'
+        };
+
+        card.transactions.push(transaction);
+        card.currentBalance = card.initialBalance;
+
+        this.saveCards();
+        
+        alert(i18n.t('alert.reset_balance_success', { amount: card.initialBalance.toFixed(2) }));
         
         return transaction;
     }
@@ -643,6 +676,145 @@ describe('GiftCardManager', () => {
 
             expect(manager.cards).toHaveLength(1);
             expect(manager.cards[0].number).toBe('9999999999');
+        });
+    });
+
+    describe('resetBalance', () => {
+        test('should reset balance to initial amount', () => {
+            // Add a gift card
+            manager.mockInput = {
+                cardNumber: '1234567890',
+                cardName: 'Reset Test Card',
+                initialBalance: '100'
+            };
+            const card = manager.addCard();
+            const cardId = card.id;
+
+            // Add a transaction to reduce balance
+            manager.mockInput = {
+                transactionAmount: '30',
+                transactionDescription: 'Purchase'
+            };
+            manager.addTransaction(cardId);
+
+            expect(card.currentBalance).toBe(70);
+
+            // Mock confirm to return true
+            global.confirm.mockReturnValue(true);
+
+            // Reset balance
+            const resetTransaction = manager.resetBalance(cardId);
+
+            expect(resetTransaction).toBeDefined();
+            expect(resetTransaction.type).toBe('reset');
+            expect(resetTransaction.amount).toBe(30); // Difference to add back
+            expect(resetTransaction.balanceAfter).toBe(100);
+            expect(card.currentBalance).toBe(100);
+            expect(card.transactions).toHaveLength(3); // initial + spend + reset
+            expect(alert).toHaveBeenCalledWith('Balance reset to €100.00');
+        });
+
+        test('should not reset balance when user cancels', () => {
+            manager.mockInput = {
+                cardNumber: '1234567890',
+                cardName: 'Cancel Reset Test',
+                initialBalance: '100'
+            };
+            const card = manager.addCard();
+            const cardId = card.id;
+
+            // Add a transaction
+            manager.mockInput = {
+                transactionAmount: '30',
+                transactionDescription: 'Purchase'
+            };
+            manager.addTransaction(cardId);
+
+            // Mock confirm to return false
+            global.confirm.mockReturnValue(false);
+
+            // Try to reset balance
+            const result = manager.resetBalance(cardId);
+
+            expect(result).toBeUndefined();
+            expect(card.currentBalance).toBe(70); // Should remain unchanged
+            expect(card.transactions).toHaveLength(2); // Only initial + spend
+        });
+
+        test('should not allow reset on fidelity cards', () => {
+            manager.mockInput = {
+                cardNumber: '1234567890',
+                cardName: 'Fidelity Test',
+                initialBalance: ''
+            };
+            const card = manager.addCard();
+            const cardId = card.id;
+
+            manager.resetBalance(cardId);
+
+            expect(alert).toHaveBeenCalledWith('Fidelity cards do not support transactions');
+            expect(card.transactions).toHaveLength(0);
+        });
+
+        test('should handle reset when balance is already at initial', () => {
+            manager.mockInput = {
+                cardNumber: '1234567890',
+                cardName: 'Already Initial Test',
+                initialBalance: '100'
+            };
+            const card = manager.addCard();
+            const cardId = card.id;
+
+            // Mock confirm to return true
+            global.confirm.mockReturnValue(true);
+
+            // Reset balance when it's already at initial
+            const resetTransaction = manager.resetBalance(cardId);
+
+            expect(resetTransaction).toBeDefined();
+            expect(resetTransaction.amount).toBe(0); // No difference
+            expect(resetTransaction.balanceAfter).toBe(100);
+            expect(card.currentBalance).toBe(100);
+            expect(card.transactions).toHaveLength(2); // initial + reset
+        });
+
+        test('should create correct transaction history for reset', () => {
+            manager.mockInput = {
+                cardNumber: '1234567890',
+                cardName: 'Transaction History Test',
+                initialBalance: '150'
+            };
+            const card = manager.addCard();
+            const cardId = card.id;
+
+            // Make several transactions
+            manager.mockInput = {
+                transactionAmount: '50',
+                transactionDescription: 'Purchase 1'
+            };
+            manager.addTransaction(cardId);
+
+            manager.mockInput = {
+                transactionAmount: '25',
+                transactionDescription: 'Purchase 2'
+            };
+            manager.addTransaction(cardId);
+
+            expect(card.currentBalance).toBe(75);
+
+            // Mock confirm to return true
+            global.confirm.mockReturnValue(true);
+
+            // Reset balance
+            manager.resetBalance(cardId);
+
+            expect(card.currentBalance).toBe(150);
+            expect(card.transactions).toHaveLength(4); // initial + 2 purchases + reset
+            
+            const resetTx = card.transactions[3];
+            expect(resetTx.type).toBe('reset');
+            expect(resetTx.description).toBe('Balance reset to initial amount');
+            expect(resetTx.balanceAfter).toBe(150);
         });
     });
 

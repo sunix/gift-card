@@ -59,6 +59,7 @@
   "card.description_placeholder": "например, Кофе в Starbucks",
   "card.record_button": "Записать Транзакцию",
   "card.transaction_history": "История Транзакций",
+  "card.reset_balance_button": "Сбросить Баланс",
   "card.archive_button": "Архивировать Карту",
   "card.unarchive_button": "Разархивировать Карту",
   "card.delete_button": "Удалить Карту",
@@ -66,12 +67,15 @@
   
   "transaction.initial_balance": "Начальный Баланс: €{amount}",
   "transaction.spent": "Потрачено: €{amount}",
+  "transaction.reset": "Баланс Сброшен: €{amount}",
   "transaction.balance_after": "Баланс после: €{amount}",
   
   "alert.card_exists": "Карта с таким номером уже существует!",
   "alert.fidelity_added": "Дисконтная карта \"{name}\" успешно добавлена!",
   "alert.gift_card_added": "Подарочная карта \"{name}\" успешно добавлена!",
   "alert.transaction_exceeds": "Сумма транзакции превышает текущий баланс!",
+  "alert.reset_balance_confirm": "Вы уверены, что хотите сбросить баланс до начальной суммы в €{amount}?",
+  "alert.reset_balance_success": "Баланс сброшен до €{amount}",
   "alert.delete_confirm": "Вы уверены, что хотите удалить эту подарочную карту? Это действие нельзя отменить.",
   "alert.export_success": "Данные успешно экспортированы в {filename}",
   "alert.export_failed": "Не удалось экспортировать данные. Пожалуйста, попробуйте ещё раз.",
