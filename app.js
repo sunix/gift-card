@@ -520,6 +520,10 @@ class GiftCardManager {
                     ? `<button class="btn btn-secondary btn-small" onclick="giftCardManager.resetBalance('${card.id}')">${i18n.t('card.reset_balance_button')}</button>`
                     : ''
                 }
+                ${!this.isFidelityCard(card) 
+                    ? `<button class="btn btn-secondary btn-small" onclick="giftCardManager.toggleExpiryDateEdit('${card.id}')">${i18n.t('card.edit_expiry')}</button>`
+                    : ''
+                }
                 ${card.archived 
                     ? `<button class="btn btn-secondary btn-small" onclick="giftCardManager.unarchiveCard('${card.id}')">${i18n.t('card.unarchive_button')}</button>`
                     : `<button class="btn btn-secondary btn-small" onclick="giftCardManager.archiveCard('${card.id}')">${i18n.t('card.archive_button')}</button>`
@@ -591,7 +595,7 @@ class GiftCardManager {
             expiryHTML += `<span id="expiryDateDisplay" style="color: #999;">${i18n.t('card.no_expiry')}</span>`;
         }
         
-        expiryHTML += ` <button class="btn btn-secondary btn-small" style="margin-left: 10px;" onclick="giftCardManager.toggleExpiryDateEdit('${card.id}')">${i18n.t('card.edit_expiry')}</button></p>`;
+        expiryHTML += `</p>`;
         
         // Hidden edit form
         expiryHTML += `
