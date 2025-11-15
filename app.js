@@ -476,6 +476,10 @@ class GiftCardManager {
             </div>`}
 
             <div class="mt-20">
+                ${!this.isFidelityCard(card) 
+                    ? `<button class="btn btn-secondary btn-small" onclick="giftCardManager.resetBalance('${card.id}')">${i18n.t('card.reset_balance_button')}</button>`
+                    : ''
+                }
                 ${card.archived 
                     ? `<button class="btn btn-secondary btn-small" onclick="giftCardManager.unarchiveCard('${card.id}')">${i18n.t('card.unarchive_button')}</button>`
                     : `<button class="btn btn-secondary btn-small" onclick="giftCardManager.archiveCard('${card.id}')">${i18n.t('card.archive_button')}</button>`
@@ -543,15 +547,20 @@ class GiftCardManager {
                 minute: '2-digit'
             });
 
-            const isPositive = transaction.type === 'initial' || transaction.amount > 0;
-            const amountDisplay = transaction.type === 'initial' 
-                ? i18n.t('transaction.initial_balance', { amount: transaction.amount.toFixed(2) })
-                : i18n.t('transaction.spent', { amount: Math.abs(transaction.amount).toFixed(2) });
+            const isPositive = transaction.type === 'initial' || transaction.type === 'reset' || transaction.amount > 0;
+            let amountDisplay;
+            if (transaction.type === 'initial') {
+                amountDisplay = i18n.t('transaction.initial_balance', { amount: transaction.amount.toFixed(2) });
+            } else if (transaction.type === 'reset') {
+                amountDisplay = i18n.t('transaction.reset', { amount: transaction.balanceAfter.toFixed(2) });
+            } else {
+                amountDisplay = i18n.t('transaction.spent', { amount: Math.abs(transaction.amount).toFixed(2) });
+            }
 
             return `
-                <div class="transaction-item ${isPositive && transaction.type === 'initial' ? 'positive' : ''}">
+                <div class="transaction-item ${isPositive && (transaction.type === 'initial' || transaction.type === 'reset') ? 'positive' : ''}">
                     <div class="transaction-date">${formattedDate}</div>
-                    <div class="transaction-amount ${transaction.type === 'initial' ? 'text-success' : 'text-danger'}">
+                    <div class="transaction-amount ${(transaction.type === 'initial' || transaction.type === 'reset') ? 'text-success' : 'text-danger'}">
                         ${amountDisplay}
                     </div>
                     ${transaction.description ? `<div><small>${this.escapeHtml(transaction.description)}</small></div>` : ''}
@@ -596,6 +605,55 @@ class GiftCardManager {
         this.saveCards();
         this.showCardDetail(cardId); // Refresh the modal
         this.renderCards(); // Refresh the cards list
+    }
+
+    // Reset balance to a custom value (default: initial balance)
+    resetBalance(cardId) {
+        const card = this.cards.find(c => c.id === cardId);
+        if (!card) return;
+
+        // Fidelity cards don't have balance
+        if (this.isFidelityCard(card)) {
+            alert(i18n.t('alert.fidelity_no_transactions'));
+            return;
+        }
+
+        // Prompt user for new balance amount with initial balance as default
+        const newBalanceInput = prompt(
+            i18n.t('alert.reset_balance_prompt', { initial: card.initialBalance.toFixed(2) }), 
+            card.initialBalance.toFixed(2)
+        );
+
+        // User cancelled
+        if (newBalanceInput === null) {
+            return;
+        }
+
+        // Validate input
+        const newBalance = parseFloat(newBalanceInput);
+        if (isNaN(newBalance) || newBalance < 0) {
+            alert(i18n.t('alert.reset_balance_invalid'));
+            return;
+        }
+
+        // Create a reset transaction
+        const transaction = {
+            date: new Date().toISOString(),
+            amount: newBalance - card.currentBalance, // Difference to add
+            type: 'reset',
+            balanceAfter: newBalance,
+            description: i18n.t('transaction.reset_description', { amount: newBalance.toFixed(2) })
+        };
+
+        card.transactions.push(transaction);
+        card.currentBalance = newBalance;
+
+        this.saveCards();
+        this.showCardDetail(cardId); // Refresh the modal
+        this.renderCards(); // Refresh the cards list
+        
+        // Show success message
+        alert(i18n.t('alert.reset_balance_success', { amount: newBalance.toFixed(2) }));
     }
 
     // Delete a card
