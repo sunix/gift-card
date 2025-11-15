@@ -26,6 +26,38 @@ class GiftCardManager {
         return card.currentBalance === null || card.currentBalance === undefined || card.currentBalance === 0;
     }
 
+    // Check if a card is expired
+    isCardExpired(card) {
+        if (!card.expiryDate || this.isFidelityCard(card)) return false;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const expiryDate = new Date(card.expiryDate);
+        return expiryDate < today;
+    }
+
+    // Check if a card expires soon (within 30 days)
+    isCardExpiringSoon(card) {
+        if (!card.expiryDate || this.isFidelityCard(card)) return false;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const expiryDate = new Date(card.expiryDate);
+        const daysUntilExpiry = Math.floor((expiryDate - today) / (1000 * 60 * 60 * 24));
+        return daysUntilExpiry >= 0 && daysUntilExpiry <= 30;
+    }
+
+    // Format expiry date for display
+    formatExpiryDate(dateString) {
+        if (!dateString) return null;
+        const date = new Date(dateString);
+        const currentLang = i18n.getCurrentLanguage();
+        const locale = this.getLocaleForLanguage(currentLang);
+        return date.toLocaleDateString(locale, {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    }
+
     // Load stores configuration
     async loadStores() {
         try {
@@ -241,6 +273,7 @@ class GiftCardManager {
         const cardNumber = document.getElementById('cardNumber').value.trim();
         const cardName = document.getElementById('cardName').value.trim();
         const initialBalanceValue = document.getElementById('initialBalance').value.trim();
+        const expiryDateValue = document.getElementById('expiryDate').value.trim();
         
         // Check if this is a fidelity card (no balance or 0 balance) or a gift card (with balance)
         const isFidelityCard = initialBalanceValue === '' || parseFloat(initialBalanceValue) === 0;
@@ -269,6 +302,11 @@ class GiftCardManager {
             createdAt: new Date().toISOString(),
             archived: GiftCardManager.DEFAULT_ARCHIVED_STATE
         };
+        
+        // Add expiry date only for gift cards (not fidelity cards)
+        if (!isFidelityCard && expiryDateValue) {
+            newCard.expiryDate = expiryDateValue;
+        }
 
         this.cards.push(newCard);
         this.saveCards();
@@ -423,14 +461,16 @@ class GiftCardManager {
                 </div>
                 <p><strong>${i18n.t('form.card_number')}</strong> ${this.escapeHtml(card.number)}</p>
                 ${this.isFidelityCard(card) ? `<p><strong>${i18n.t('card.type')}</strong> <span style="color: #9C27B0; font-weight: bold;">${i18n.t('card.fidelity_badge')}</span></p>` : `<p><strong>${i18n.t('card.current_balance')}</strong> <span style="color: ${store.color}; font-weight: bold;">€${card.currentBalance.toFixed(2)}</span></p>
-                <p><strong>${i18n.t('card.initial_balance')}</strong> €${card.initialBalance.toFixed(2)}</p>`}
+                <p><strong>${i18n.t('card.initial_balance')}</strong> €${card.initialBalance.toFixed(2)}</p>
+                ${this.generateExpiryDateHTML(card)}`}
             `;
         } else {
             content.innerHTML = `
                 <h2>${this.escapeHtml(card.name)}</h2>
                 <p><strong>${i18n.t('form.card_number')}</strong> ${this.escapeHtml(card.number)}</p>
                 ${this.isFidelityCard(card) ? `<p><strong>${i18n.t('card.type')}</strong> <span style="color: #9C27B0; font-weight: bold;">${i18n.t('card.fidelity_badge')}</span></p>` : `<p><strong>${i18n.t('card.current_balance')}</strong> <span class="text-success">€${card.currentBalance.toFixed(2)}</span></p>
-                <p><strong>${i18n.t('card.initial_balance')}</strong> €${card.initialBalance.toFixed(2)}</p>`}
+                <p><strong>${i18n.t('card.initial_balance')}</strong> €${card.initialBalance.toFixed(2)}</p>
+                ${this.generateExpiryDateHTML(card)}`}
             `;
         }
         
@@ -522,6 +562,80 @@ class GiftCardManager {
 
         // Show modal
         document.getElementById('cardDetailModal').style.display = 'block';
+    }
+
+    // Generate expiry date HTML with edit functionality (only for gift cards)
+    generateExpiryDateHTML(card) {
+        if (this.isFidelityCard(card)) {
+            return ''; // No expiry date for fidelity cards
+        }
+
+        let expiryHTML = '<div id="expiryDateSection" style="margin-top: 10px;">';
+        expiryHTML += `<p><strong>${i18n.t('card.expiry_date')}</strong> `;
+        
+        if (card.expiryDate) {
+            const formattedDate = this.formatExpiryDate(card.expiryDate);
+            let dateStyle = '';
+            let statusBadge = '';
+            
+            if (this.isCardExpired(card)) {
+                dateStyle = 'color: #d32f2f; font-weight: bold;';
+                statusBadge = `<span style="background: #d32f2f; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.85em; margin-left: 8px;">${i18n.t('card.expired')}</span>`;
+            } else if (this.isCardExpiringSoon(card)) {
+                dateStyle = 'color: #f57c00; font-weight: bold;';
+                statusBadge = `<span style="background: #f57c00; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.85em; margin-left: 8px;">${i18n.t('card.expires_soon')}</span>`;
+            }
+            
+            expiryHTML += `<span id="expiryDateDisplay" style="${dateStyle}">${this.escapeHtml(formattedDate)}</span>${statusBadge}`;
+        } else {
+            expiryHTML += `<span id="expiryDateDisplay" style="color: #999;">${i18n.t('card.no_expiry')}</span>`;
+        }
+        
+        expiryHTML += ` <button class="btn btn-secondary btn-small" style="margin-left: 10px;" onclick="giftCardManager.toggleExpiryDateEdit('${card.id}')">${i18n.t('card.edit_expiry')}</button></p>`;
+        
+        // Hidden edit form
+        expiryHTML += `
+            <div id="expiryDateEditForm" style="display: none; margin-top: 10px;">
+                <input type="date" id="expiryDateInput" value="${card.expiryDate || ''}" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-right: 10px;">
+                <button class="btn btn-secondary btn-small" onclick="giftCardManager.saveExpiryDate('${card.id}')">${i18n.t('card.save_expiry')}</button>
+                <button class="btn btn-secondary btn-small" onclick="giftCardManager.toggleExpiryDateEdit('${card.id}')">${i18n.t('card.cancel_edit')}</button>
+            </div>
+        `;
+        expiryHTML += '</div>';
+        
+        return expiryHTML;
+    }
+
+    // Toggle expiry date edit form
+    toggleExpiryDateEdit(cardId) {
+        const editForm = document.getElementById('expiryDateEditForm');
+        const displaySpan = document.getElementById('expiryDateDisplay');
+        
+        if (editForm.style.display === 'none') {
+            editForm.style.display = 'block';
+        } else {
+            editForm.style.display = 'none';
+        }
+    }
+
+    // Save expiry date
+    saveExpiryDate(cardId) {
+        const card = this.cards.find(c => c.id === cardId);
+        if (!card || this.isFidelityCard(card)) return;
+
+        const newExpiryDate = document.getElementById('expiryDateInput').value.trim();
+        
+        if (newExpiryDate) {
+            card.expiryDate = newExpiryDate;
+        } else {
+            // Remove expiry date if empty
+            delete card.expiryDate;
+        }
+        
+        this.saveCards();
+        
+        // Refresh the card detail view
+        this.showCardDetail(cardId);
     }
 
     // Render transaction history
