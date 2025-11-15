@@ -99,6 +99,7 @@ class GiftCardManager {
         const cardNumber = this.mockInput.cardNumber.trim();
         const cardName = this.mockInput.cardName.trim();
         const initialBalanceValue = this.mockInput.initialBalance.trim();
+        const expiryDateValue = this.mockInput.expiryDate ? this.mockInput.expiryDate.trim() : '';
         
         const isFidelityCard = initialBalanceValue === '' || parseFloat(initialBalanceValue) === 0;
         const initialBalance = isFidelityCard ? null : parseFloat(initialBalanceValue);
@@ -125,6 +126,11 @@ class GiftCardManager {
             createdAt: new Date().toISOString(),
             archived: GiftCardManager.DEFAULT_ARCHIVED_STATE
         };
+        
+        // Add expiry date only for gift cards (not fidelity cards)
+        if (!isFidelityCard && expiryDateValue) {
+            newCard.expiryDate = expiryDateValue;
+        }
 
         this.cards.push(newCard);
         this.saveCards();
@@ -267,9 +273,32 @@ class GiftCardManager {
         cardNumber: '',
         cardName: '',
         initialBalance: '',
+        expiryDate: '',
         transactionAmount: '',
         transactionDescription: ''
     };
+
+    // Helper methods for expiry date checking
+    isFidelityCard(card) {
+        return card.currentBalance === null || card.currentBalance === undefined || card.currentBalance === 0;
+    }
+
+    isCardExpired(card) {
+        if (!card.expiryDate || this.isFidelityCard(card)) return false;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const expiryDate = new Date(card.expiryDate);
+        return expiryDate < today;
+    }
+
+    isCardExpiringSoon(card) {
+        if (!card.expiryDate || this.isFidelityCard(card)) return false;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const expiryDate = new Date(card.expiryDate);
+        const daysUntilExpiry = Math.floor((expiryDate - today) / (1000 * 60 * 60 * 24));
+        return daysUntilExpiry >= 0 && daysUntilExpiry <= 30;
+    }
 }
 
 describe('GiftCardManager', () => {
@@ -942,6 +971,143 @@ describe('GiftCardManager', () => {
             
             expect(newManager.cards).toHaveLength(1);
             expect(newManager.cards[0].name).toBe('Loaded Card');
+        });
+    });
+
+    describe('expiry date functionality', () => {
+        test('should add a gift card with expiry date', () => {
+            const futureDate = new Date();
+            futureDate.setDate(futureDate.getDate() + 60);
+            const expiryDateString = futureDate.toISOString().split('T')[0];
+
+            manager.mockInput = {
+                cardNumber: '1234567890',
+                cardName: 'Test Gift Card with Expiry',
+                initialBalance: '100',
+                expiryDate: expiryDateString
+            };
+
+            const card = manager.addCard();
+
+            expect(card).toBeDefined();
+            expect(card.expiryDate).toBe(expiryDateString);
+            expect(manager.isCardExpired(card)).toBe(false);
+        });
+
+        test('should add a gift card without expiry date', () => {
+            manager.mockInput = {
+                cardNumber: '1234567890',
+                cardName: 'Test Gift Card No Expiry',
+                initialBalance: '50',
+                expiryDate: ''
+            };
+
+            const card = manager.addCard();
+
+            expect(card).toBeDefined();
+            expect(card.expiryDate).toBeUndefined();
+        });
+
+        test('should not add expiry date to fidelity cards', () => {
+            const futureDate = new Date();
+            futureDate.setDate(futureDate.getDate() + 60);
+            const expiryDateString = futureDate.toISOString().split('T')[0];
+
+            manager.mockInput = {
+                cardNumber: '9876543210',
+                cardName: 'Fidelity Card',
+                initialBalance: '',
+                expiryDate: expiryDateString
+            };
+
+            const card = manager.addCard();
+
+            expect(card).toBeDefined();
+            expect(manager.isFidelityCard(card)).toBe(true);
+            expect(card.expiryDate).toBeUndefined();
+        });
+
+        test('should detect expired cards', () => {
+            const pastDate = new Date();
+            pastDate.setDate(pastDate.getDate() - 10);
+            const expiryDateString = pastDate.toISOString().split('T')[0];
+
+            manager.mockInput = {
+                cardNumber: '1111111111',
+                cardName: 'Expired Card',
+                initialBalance: '75',
+                expiryDate: expiryDateString
+            };
+
+            const card = manager.addCard();
+
+            expect(manager.isCardExpired(card)).toBe(true);
+            expect(manager.isCardExpiringSoon(card)).toBe(false);
+        });
+
+        test('should detect cards expiring soon', () => {
+            const soonDate = new Date();
+            soonDate.setDate(soonDate.getDate() + 15); // 15 days in future
+            const expiryDateString = soonDate.toISOString().split('T')[0];
+
+            manager.mockInput = {
+                cardNumber: '2222222222',
+                cardName: 'Expiring Soon Card',
+                initialBalance: '100',
+                expiryDate: expiryDateString
+            };
+
+            const card = manager.addCard();
+
+            expect(manager.isCardExpired(card)).toBe(false);
+            expect(manager.isCardExpiringSoon(card)).toBe(true);
+        });
+
+        test('should not flag cards with distant expiry dates', () => {
+            const futureDate = new Date();
+            futureDate.setDate(futureDate.getDate() + 100); // 100 days in future
+            const expiryDateString = futureDate.toISOString().split('T')[0];
+
+            manager.mockInput = {
+                cardNumber: '3333333333',
+                cardName: 'Future Expiry Card',
+                initialBalance: '200',
+                expiryDate: expiryDateString
+            };
+
+            const card = manager.addCard();
+
+            expect(manager.isCardExpired(card)).toBe(false);
+            expect(manager.isCardExpiringSoon(card)).toBe(false);
+        });
+
+        test('should handle cards without expiry date in expiry checks', () => {
+            manager.mockInput = {
+                cardNumber: '4444444444',
+                cardName: 'No Expiry Card',
+                initialBalance: '50',
+                expiryDate: ''
+            };
+
+            const card = manager.addCard();
+
+            expect(manager.isCardExpired(card)).toBe(false);
+            expect(manager.isCardExpiringSoon(card)).toBe(false);
+        });
+
+        test('should handle fidelity cards in expiry checks', () => {
+            manager.mockInput = {
+                cardNumber: '5555555555',
+                cardName: 'Fidelity Card Check',
+                initialBalance: '',
+                expiryDate: ''
+            };
+
+            const card = manager.addCard();
+
+            expect(manager.isFidelityCard(card)).toBe(true);
+            expect(manager.isCardExpired(card)).toBe(false);
+            expect(manager.isCardExpiringSoon(card)).toBe(false);
         });
     });
 });
