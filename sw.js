@@ -90,13 +90,16 @@ self.addEventListener('fetch', (event) => {
             })
             .catch(() => {
               // Both cache and network failed for navigation
-              return new Response('App unavailable - Please check your connection', {
-                status: 503,
-                statusText: 'Service Unavailable',
-                headers: new Headers({
-                  'Content-Type': 'text/html'
-                })
-              });
+              return new Response(
+                '<!DOCTYPE html><html><head><title>App Unavailable</title></head><body><h1>App Unavailable</h1><p>Please check your connection and try again.</p></body></html>',
+                {
+                  status: 503,
+                  statusText: 'Service Unavailable',
+                  headers: new Headers({
+                    'Content-Type': 'text/html'
+                  })
+                }
+              );
             });
         })
     );
@@ -126,7 +129,8 @@ self.addEventListener('fetch', (event) => {
             .then((response) => {
               clearTimeoutOnce();
               // Check if we received a valid response
-              if (!response || response.status !== 200 || response.type !== 'basic') {
+              // Allow basic, cors, and opaque response types
+              if (!response || response.status !== 200) {
                 return response;
               }
 
