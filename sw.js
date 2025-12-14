@@ -62,7 +62,7 @@ self.addEventListener('fetch', (event) => {
             // Update cache in background
             fetch(event.request)
               .then((response) => {
-                if (response && response.status === 200) {
+                if (response && response.ok) {
                   caches.open(CACHE_NAME)
                     .then((cache) => {
                       cache.put(event.request, response.clone());
@@ -79,7 +79,7 @@ self.addEventListener('fetch', (event) => {
           // No cache, try network
           return fetch(event.request)
             .then((response) => {
-              if (response && response.status === 200) {
+              if (response && response.ok) {
                 const responseToCache = response.clone();
                 caches.open(CACHE_NAME)
                   .then((cache) => {
@@ -129,8 +129,8 @@ self.addEventListener('fetch', (event) => {
             .then((response) => {
               clearTimeoutOnce();
               // Check if we received a valid response
-              // Allow basic, cors, and opaque response types
-              if (!response || response.status !== 200) {
+              // Use response.ok to properly handle all response types including opaque
+              if (!response || !response.ok) {
                 return response;
               }
 
