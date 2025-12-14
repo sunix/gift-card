@@ -259,13 +259,23 @@ class GiftCardManager {
 
     // Load cards from localStorage
     loadCards() {
-        const stored = localStorage.getItem('giftCards');
-        return stored ? JSON.parse(stored) : [];
+        try {
+            const stored = localStorage.getItem('giftCards');
+            return stored ? JSON.parse(stored) : [];
+        } catch (error) {
+            console.warn('Unable to load cards from localStorage:', error);
+            return [];
+        }
     }
 
     // Save cards to localStorage
     saveCards() {
-        localStorage.setItem('giftCards', JSON.stringify(this.cards));
+        try {
+            localStorage.setItem('giftCards', JSON.stringify(this.cards));
+        } catch (error) {
+            console.error('Unable to save cards to localStorage:', error);
+            // You could show a user-friendly error message here
+        }
     }
 
     // Add a new gift card
