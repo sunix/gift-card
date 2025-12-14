@@ -62,6 +62,7 @@ self.addEventListener('fetch', (event) => {
             // Update cache in background
             fetch(event.request)
               .then((response) => {
+                // Navigation requests are always same-origin, so response.ok is reliable
                 if (response && response.ok) {
                   caches.open(CACHE_NAME)
                     .then((cache) => {
@@ -79,6 +80,7 @@ self.addEventListener('fetch', (event) => {
           // No cache, try network
           return fetch(event.request)
             .then((response) => {
+              // Navigation requests are always same-origin, so response.ok is reliable
               if (response && response.ok) {
                 const responseToCache = response.clone();
                 caches.open(CACHE_NAME)
@@ -129,21 +131,26 @@ self.addEventListener('fetch', (event) => {
             .then((response) => {
               clearTimeoutOnce();
               // Check if we received a valid response
-              // Use response.ok to properly handle all response types including opaque
-              if (!response || !response.ok) {
+              // For same-origin requests, use response.ok
+              // For cross-origin requests (opaque), cache if response exists
+              if (!response) {
                 return response;
               }
+              
+              const shouldCache = response.ok || response.type === 'opaque';
+              
+              if (shouldCache) {
+                // Clone the response to cache it
+                const responseToCache = response.clone();
 
-              // Clone the response to cache it
-              const responseToCache = response.clone();
-
-              caches.open(CACHE_NAME)
-                .then((cache) => {
-                  cache.put(event.request, responseToCache);
-                })
-                .catch((error) => {
-                  console.error('Failed to cache response:', error);
-                });
+                caches.open(CACHE_NAME)
+                  .then((cache) => {
+                    cache.put(event.request, responseToCache);
+                  })
+                  .catch((error) => {
+                    console.error('Failed to cache response:', error);
+                  });
+              }
 
               return response;
             })
