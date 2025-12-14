@@ -1,5 +1,9 @@
 const CACHE_NAME = 'gift-card-manager-v2.0.2';
 const NETWORK_TIMEOUT_MS = 4000; // 4 seconds timeout for network requests
+
+// HTML error page template for navigation failures
+const NAVIGATION_ERROR_HTML = '<!DOCTYPE html><html><head><title>App Unavailable</title></head><body><h1>App Unavailable</h1><p>Please check your connection and try again.</p></body></html>';
+
 const urlsToCache = [
   './',
   './index.html',
@@ -7,6 +11,7 @@ const urlsToCache = [
   './app.js',
   './barcode.js',
   './i18n.js',
+  // i18n language files - update this list when adding/removing languages
   './i18n/en.json',
   './i18n/fr.json',
   './i18n/uk.json',
@@ -92,16 +97,13 @@ self.addEventListener('fetch', (event) => {
             })
             .catch(() => {
               // Both cache and network failed for navigation
-              return new Response(
-                '<!DOCTYPE html><html><head><title>App Unavailable</title></head><body><h1>App Unavailable</h1><p>Please check your connection and try again.</p></body></html>',
-                {
-                  status: 503,
-                  statusText: 'Service Unavailable',
-                  headers: new Headers({
-                    'Content-Type': 'text/html'
-                  })
-                }
-              );
+              return new Response(NAVIGATION_ERROR_HTML, {
+                status: 503,
+                statusText: 'Service Unavailable',
+                headers: new Headers({
+                  'Content-Type': 'text/html'
+                })
+              });
             });
         })
     );
@@ -131,8 +133,9 @@ self.addEventListener('fetch', (event) => {
             .then((response) => {
               clearTimeoutOnce();
               // Check if we received a valid response
-              // For same-origin requests, use response.ok
-              // For cross-origin requests (opaque), cache if response exists
+              // For same-origin requests: response.ok indicates success (status 200-299)
+              // For cross-origin requests (opaque): response.ok is always false even when successful,
+              // so we cache opaque responses when they exist to support CDN resources like bwip-js
               if (!response) {
                 return response;
               }
