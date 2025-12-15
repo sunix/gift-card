@@ -2,7 +2,7 @@
   {
     "name": "Magasins U",
     "matchStrings": ["super u", "magasins u", "hyper u", "u express", "carte u"],
-    "iconUrl": "https://www.magasins-u.com/content/dam/ufrfront/edito/assets-u/dam/logos/logo-u.svg",
+    "iconUrl": "https://upload.wikimedia.org/wikipedia/fr/1/13/U_commer%C3%A7ants_logo_2018.svg",
     "icon": "store-logos/super-u.svg",
     "color": "#E30613",
     "background": "linear-gradient(135deg, #E30613, #FF4757)"
