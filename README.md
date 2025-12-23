@@ -23,15 +23,15 @@ A simple, static web application to manage your gift cards locally in your brows
 ## Screenshots
 
 ### Main Interface
-![Main Page](https://github.com/user-attachments/assets/3aab18fd-1958-42c2-8374-1f73dd39c8e7)
+![Main Page](https://github.com/user-attachments/assets/ff0c86d5-5a0b-4ff4-8bcb-625535bf1c6f)
 *The clean and intuitive main interface with smart store recognition and support for both gift cards and fidelity cards*
 
 ### Gift Card List with Store Branding
-![Card List](https://github.com/user-attachments/assets/b839db8f-0fa6-4267-abfc-b718dcf14eb8)
+![Card List](https://github.com/user-attachments/assets/c8d0ae43-3024-4a02-959d-a18e237662bf)
 *View all your cards with automatic store logos, colors, and distinction between gift cards (with balance) and fidelity cards*
 
 ### Card Details & Barcode
-![Card Detail](https://github.com/user-attachments/assets/5d32378c-f9af-4301-9d0b-36279bcd36a6)
+![Card Detail](https://github.com/user-attachments/assets/0c310659-25e3-43b0-adf1-13d020d06024)
 *Detailed view with store branding, barcode generation in multiple formats, and transaction management*
 
 ## Usage
