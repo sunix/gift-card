@@ -60,44 +60,28 @@ global.alert = jest.fn();
 global.confirm = jest.fn();
 global.prompt = jest.fn();
 
-// Load the GiftCardManager class
-// We need to define it here since we can't load the file directly due to DOM dependencies
-class GiftCardManager {
-    static DEFAULT_ARCHIVED_STATE = false;
-    
+// Mock window object for browser-specific code
+global.window = global.window || {};
+
+// Import the actual GiftCardManager class from app.js
+const { GiftCardManager: BaseGiftCardManager } = require('./app.js');
+
+// Extend the real GiftCardManager for testing purposes
+class GiftCardManager extends BaseGiftCardManager {
     constructor() {
-        this.cards = this.loadCards();
-        this.stores = [];
-        this.draggedElement = null;
-        this.draggedCardId = null;
-    }
-
-    getLocaleForLanguage(lang) {
-        const localeMap = {
-            'fr': 'fr-FR',
-            'en': 'en-US',
-            'uk': 'uk-UA',
-            'ru': 'ru-RU'
+        super();
+        // Mock input property for testing
+        this.mockInput = {
+            cardNumber: '',
+            cardName: '',
+            initialBalance: '',
+            expiryDate: '',
+            transactionAmount: '',
+            transactionDescription: ''
         };
-        return localeMap[lang] || 'en-US';
     }
 
-    isFidelityCard(card) {
-        // Fidelity cards have null or 0 initialBalance AND null or 0 currentBalance
-        // Gift cards have a positive initialBalance (even if currentBalance is 0 after spending)
-        return (card.initialBalance === null || card.initialBalance === undefined || card.initialBalance === 0) &&
-               (card.currentBalance === null || card.currentBalance === undefined || card.currentBalance === 0);
-    }
-
-    loadCards() {
-        const stored = localStorage.getItem('giftCards');
-        return stored ? JSON.parse(stored) : [];
-    }
-
-    saveCards() {
-        localStorage.setItem('giftCards', JSON.stringify(this.cards));
-    }
-
+    // Override addCard to use mockInput instead of DOM elements
     addCard() {
         const cardNumber = this.mockInput.cardNumber.trim();
         const cardName = this.mockInput.cardName.trim();
@@ -144,6 +128,7 @@ class GiftCardManager {
         return newCard;
     }
 
+    // Override exportData to avoid DOM dependencies
     exportData() {
         const exportData = {
             version: '1.0',
@@ -153,6 +138,7 @@ class GiftCardManager {
         return exportData;
     }
 
+    // Override importData for testing
     importData(importedDataString) {
         try {
             const importedData = JSON.parse(importedDataString);
@@ -194,6 +180,7 @@ class GiftCardManager {
         }
     }
 
+    // Override addTransaction to use mockInput
     addTransaction(cardId) {
         const card = this.cards.find(c => c.id === cardId);
         if (!card) return;
@@ -229,6 +216,7 @@ class GiftCardManager {
         return transaction;
     }
 
+    // Override resetBalance for testing
     resetBalance(cardId) {
         const card = this.cards.find(c => c.id === cardId);
         if (!card) return;
@@ -270,42 +258,8 @@ class GiftCardManager {
         
         return transaction;
     }
-
-    // Mock input property for testing
-    mockInput = {
-        cardNumber: '',
-        cardName: '',
-        initialBalance: '',
-        expiryDate: '',
-        transactionAmount: '',
-        transactionDescription: ''
-    };
-
-    // Helper methods for expiry date checking
-    isFidelityCard(card) {
-        // Fidelity cards have null or 0 initialBalance AND null or 0 currentBalance
-        // Gift cards have a positive initialBalance (even if currentBalance is 0 after spending)
-        return (card.initialBalance === null || card.initialBalance === undefined || card.initialBalance === 0) &&
-               (card.currentBalance === null || card.currentBalance === undefined || card.currentBalance === 0);
-    }
-
-    isCardExpired(card) {
-        if (!card.expiryDate || this.isFidelityCard(card)) return false;
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const expiryDate = new Date(card.expiryDate);
-        return expiryDate < today;
-    }
-
-    isCardExpiringSoon(card) {
-        if (!card.expiryDate || this.isFidelityCard(card)) return false;
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const expiryDate = new Date(card.expiryDate);
-        const daysUntilExpiry = Math.floor((expiryDate - today) / (1000 * 60 * 60 * 24));
-        return daysUntilExpiry >= 0 && daysUntilExpiry <= 30;
-    }
 }
+
 
 describe('GiftCardManager', () => {
     let manager;
