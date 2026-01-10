@@ -389,9 +389,10 @@ class GiftCardManager {
             : `<div class="card-balance" ${store ? `style="color: ${store.color};"` : ''}>€${card.currentBalance.toFixed(2)}</div>`;
         
         return `
-            <div class="card" draggable="true" data-card-id="${card.id}" onclick="giftCardManager.showCardDetail('${card.id}')" style="${cardStyle}">
+            <div class="card" draggable="false" data-card-id="${card.id}" onclick="window.giftCardManager.showCardDetail('${card.id}')" style="${cardStyle}">
                 <div class="card-header">
-                    <div style="display: flex; align-items: center;">
+                    <div class="drag-handle" draggable="true" title="${i18n.t('card.drag_to_reorder')}" style="cursor: grab; padding: 5px; margin-right: 10px; color: #999; display: flex; align-items: center;">⋮⋮</div>
+                    <div style="display: flex; align-items: center; flex: 1;">
                         ${storeIcon}
                         <div>
                             <div class="card-name">${this.escapeHtml(card.name)}</div>
@@ -530,18 +531,18 @@ class GiftCardManager {
 
             <div class="mt-20">
                 ${!this.isFidelityCard(card) 
-                    ? `<button class="btn btn-secondary btn-small" onclick="giftCardManager.resetBalance('${card.id}')">${i18n.t('card.reset_balance_button')}</button>`
+                    ? `<button class="btn btn-secondary btn-small" onclick="window.giftCardManager.resetBalance('${card.id}')">${i18n.t('card.reset_balance_button')}</button>`
                     : ''
                 }
                 ${!this.isFidelityCard(card) 
-                    ? `<button class="btn btn-secondary btn-small" onclick="giftCardManager.toggleExpiryDateEdit('${card.id}')">${i18n.t('card.edit_expiry')}</button>`
+                    ? `<button class="btn btn-secondary btn-small" onclick="window.giftCardManager.toggleExpiryDateEdit('${card.id}')">${i18n.t('card.edit_expiry')}</button>`
                     : ''
                 }
                 ${card.archived 
-                    ? `<button class="btn btn-secondary btn-small" onclick="giftCardManager.unarchiveCard('${card.id}')">${i18n.t('card.unarchive_button')}</button>`
-                    : `<button class="btn btn-secondary btn-small" onclick="giftCardManager.archiveCard('${card.id}')">${i18n.t('card.archive_button')}</button>`
+                    ? `<button class="btn btn-secondary btn-small" onclick="window.giftCardManager.unarchiveCard('${card.id}')">${i18n.t('card.unarchive_button')}</button>`
+                    : `<button class="btn btn-secondary btn-small" onclick="window.giftCardManager.archiveCard('${card.id}')">${i18n.t('card.archive_button')}</button>`
                 }
-                <button class="btn btn-danger btn-small" onclick="giftCardManager.deleteCard('${card.id}')">${i18n.t('card.delete_button')}</button>
+                <button class="btn btn-danger btn-small" onclick="window.giftCardManager.deleteCard('${card.id}')">${i18n.t('card.delete_button')}</button>
             </div>
             ${!this.isFidelityCard(card) 
                 ? `<div id="expiryDateEditForm" style="display: none; margin-top: 15px; padding: 15px; background: #f0f8ff; border-radius: 8px; border: 2px solid #e0e0e0;">
@@ -549,8 +550,8 @@ class GiftCardManager {
                         <label for="expiryDateInput" style="display: block; margin-bottom: 5px; font-weight: 600;">${i18n.t('card.expiry_date')}</label>
                         <input type="date" id="expiryDateInput" value="${card.expiryDate || ''}" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%; max-width: 250px;">
                     </div>
-                    <button class="btn btn-secondary btn-small" onclick="giftCardManager.saveExpiryDate('${card.id}')">${i18n.t('card.save_expiry')}</button>
-                    <button class="btn btn-secondary btn-small" onclick="giftCardManager.toggleExpiryDateEdit('${card.id}')">${i18n.t('card.cancel_edit')}</button>
+                    <button class="btn btn-secondary btn-small" onclick="window.giftCardManager.saveExpiryDate('${card.id}')">${i18n.t('card.save_expiry')}</button>
+                    <button class="btn btn-secondary btn-small" onclick="window.giftCardManager.toggleExpiryDateEdit('${card.id}')">${i18n.t('card.cancel_edit')}</button>
                 </div>`
                 : ''
             }
@@ -939,11 +940,14 @@ class GiftCardManager {
 
     // Setup drag and drop functionality for cards
     setupDragAndDrop() {
-        const cardElements = document.querySelectorAll('.card[draggable="true"]');
+        const dragHandles = document.querySelectorAll('.drag-handle[draggable="true"]');
+        const cardElements = document.querySelectorAll('.card');
         
-        cardElements.forEach(cardElement => {
+        dragHandles.forEach(dragHandle => {
+            const cardElement = dragHandle.closest('.card');
+            
             // Dragstart - save the dragged element
-            cardElement.addEventListener('dragstart', (e) => {
+            dragHandle.addEventListener('dragstart', (e) => {
                 this.draggedElement = cardElement;
                 this.draggedCardId = cardElement.getAttribute('data-card-id');
                 cardElement.classList.add('dragging');
@@ -953,7 +957,7 @@ class GiftCardManager {
             });
             
             // Dragend - cleanup
-            cardElement.addEventListener('dragend', (e) => {
+            dragHandle.addEventListener('dragend', (e) => {
                 cardElement.classList.remove('dragging');
                 // Remove drag-over class only from elements that have it
                 const dragOverElements = document.querySelectorAll('.card.drag-over');
@@ -961,7 +965,9 @@ class GiftCardManager {
                     card.classList.remove('drag-over');
                 });
             });
-            
+        });
+        
+        cardElements.forEach(cardElement => {
             // Dragover - allow drop
             cardElement.addEventListener('dragover', (e) => {
                 e.preventDefault();
@@ -1024,12 +1030,10 @@ if (typeof module !== 'undefined' && module.exports) {
 
 // Initialize the app when DOM is loaded (browser environment)
 if (typeof window !== 'undefined') {
-    let giftCardManager;
-
     // Wait for i18n to be ready before initializing the app
     window.addEventListener('i18nReady', async () => {
-        giftCardManager = new GiftCardManager();
-        await giftCardManager.init();
+        window.giftCardManager = new GiftCardManager();
+        await window.giftCardManager.init();
         
         // Register service worker for PWA functionality
         if ('serviceWorker' in navigator) {

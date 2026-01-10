@@ -50,6 +50,7 @@
   "export.description": "Експортуйте свої дані як резервну копію або імпортуйте раніше експортовані дані.",
   
   "card.fidelity_badge": "Дисконтна Картка",
+  "card.drag_to_reorder": "Перетягніть для зміни порядку",
   "card.current_balance": "Поточний Баланс:",
   "card.initial_balance": "Початковий Баланс:",
   "card.type": "Тип:",

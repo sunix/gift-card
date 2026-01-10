@@ -50,6 +50,7 @@
   "export.description": "Exportez vos données en tant que sauvegarde ou importez des données précédemment exportées.",
   
   "card.fidelity_badge": "Carte de Fidélité",
+  "card.drag_to_reorder": "Glisser pour réorganiser",
   "card.current_balance": "Solde Actuel :",
   "card.initial_balance": "Solde Initial :",
   "card.type": "Type :",

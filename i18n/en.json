@@ -50,6 +50,7 @@
   "export.description": "Export your data as a backup or import previously exported data.",
   
   "card.fidelity_badge": "Fidelity Card",
+  "card.drag_to_reorder": "Drag to reorder",
   "card.current_balance": "Current Balance:",
   "card.initial_balance": "Initial Balance:",
   "card.type": "Type:",

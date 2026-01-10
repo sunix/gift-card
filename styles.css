@@ -153,13 +153,24 @@ h2 {
 }
 
 /* Drag and Drop Styles */
-.card[draggable="true"] {
-    cursor: move;
+.drag-handle {
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+.drag-handle:hover {
+    color: var(--primary-color) !important;
 }
 
 .card.dragging {
     opacity: 0.5;
-    cursor: grabbing;
 }
 
 .card.drag-over {
