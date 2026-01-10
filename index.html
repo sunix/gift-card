@@ -184,6 +184,21 @@
     </style>
 </head>
 <body>
+    <!-- Preview Banner -->
+    <div id="preview-banner" style="display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 9999; background: linear-gradient(135deg, #4CAF50 0%, #2196F3 100%); box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; gap: 12px;">
+        <div style="font-size: 24px; flex-shrink: 0;">🎁</div>
+        <div style="flex: 1; color: white;">
+          <strong style="display: block; font-size: 14px;">Preview Environment</strong>
+          <span style="display: block; font-size: 12px; opacity: 0.9;">This is not the official site - Test environment only</span>
+        </div>
+        <a id="preview-banner-pr-link" href="#" style="display: none; background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.2s ease; flex-shrink: 0; align-items: center; gap: 6px; text-decoration: none;" target="_blank" rel="noopener noreferrer">
+          💬 Give feedback on the PR
+        </a>
+        <button id="preview-banner-close" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 12px; border-radius: 50%; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s ease; flex-shrink: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;" aria-label="Close">✕</button>
+      </div>
+    </div>
+    
     <!-- Combined Navigation Bar and Header -->
     <nav class="navbar">
         <div class="navbar-container">
@@ -401,6 +416,61 @@
             }
         });
     });
+</script>
+
+<!-- Preview Banner Script -->
+<script>
+(function() {
+  // Show banner only on surge.sh or preview environments
+  if (window.location.hostname.includes('surge.sh') || window.location.hostname.includes('preview')) {
+    var banner = document.getElementById('preview-banner');
+    var closeBtn = document.getElementById('preview-banner-close');
+    var prLink = document.getElementById('preview-banner-pr-link');
+    
+    if (banner) {
+      banner.style.display = 'block';
+      document.body.style.paddingTop = '60px';
+    }
+    
+    // Extract PR number from hostname (format: pr-[NUMBER]-gift-card-preview.surge.sh)
+    var hostname = window.location.hostname;
+    var prMatch = hostname.match(/^pr-(\d+)-/);
+    if (prMatch && prMatch[1] && prLink) {
+      var prNumber = prMatch[1];
+      // Validate PR number contains only digits (additional safety check)
+      if (/^\d+$/.test(prNumber)) {
+        prLink.href = 'https://github.com/sunix/gift-card/pull/' + encodeURIComponent(prNumber);
+        prLink.style.display = 'inline-flex';
+      }
+    }
+    
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function() {
+        if (banner) {
+          banner.style.display = 'none';
+          document.body.style.paddingTop = '0';
+        }
+      });
+      
+      // Add hover effect to close button
+      closeBtn.addEventListener('mouseenter', function() {
+        this.style.background = 'rgba(255,255,255,0.35)';
+      });
+      closeBtn.addEventListener('mouseleave', function() {
+        this.style.background = 'rgba(255,255,255,0.2)';
+      });
+    }
+    
+    if (prLink) {
+      prLink.addEventListener('mouseenter', function() {
+        this.style.background = 'rgba(255,255,255,0.35)';
+      });
+      prLink.addEventListener('mouseleave', function() {
+        this.style.background = 'rgba(255,255,255,0.2)';
+      });
+    }
+  }
+})();
 </script>
 
 </body>

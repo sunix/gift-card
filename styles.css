@@ -519,3 +519,36 @@ h2 {
         font-size: 0.85rem;
     }
 }
+
+/* Preview Banner - Mobile Responsive Styles */
+@media (max-width: 640px) {
+    #preview-banner > div {
+        padding: 10px 12px !important;
+        flex-wrap: wrap !important;
+    }
+    
+    #preview-banner > div > div:first-of-type {
+        font-size: 20px !important;
+    }
+    
+    #preview-banner > div > div:nth-of-type(2) strong {
+        font-size: 12px !important;
+    }
+    
+    #preview-banner > div > div:nth-of-type(2) span {
+        font-size: 11px !important;
+    }
+    
+    #preview-banner-pr-link {
+        padding: 6px 10px !important;
+        font-size: 11px !important;
+        order: 4;
+        margin-top: 6px !important;
+        width: 100% !important;
+        justify-content: center !important;
+    }
+    
+    body[style*="paddingTop"] {
+        padding-top: 80px !important;
+    }
+}
