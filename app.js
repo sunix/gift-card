@@ -391,7 +391,7 @@ class GiftCardManager {
         return `
             <div class="card" draggable="false" data-card-id="${card.id}" onclick="window.giftCardManager.showCardDetail('${card.id}')" style="${cardStyle}">
                 <div class="card-header">
-                    <div class="drag-handle" draggable="true" title="${i18n.t('card.drag_to_reorder')}" style="cursor: grab; padding: 5px; margin-right: 10px; color: #999; display: flex; align-items: center;">⋮⋮</div>
+                    <div class="drag-handle" draggable="true" role="button" tabindex="0" aria-label="${i18n.t('card.drag_to_reorder')}" title="${i18n.t('card.drag_to_reorder')}">⋮⋮</div>
                     <div style="display: flex; align-items: center; flex: 1;">
                         ${storeIcon}
                         <div>
