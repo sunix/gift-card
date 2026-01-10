@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gift-card-manager-v2.0.2';
+const CACHE_NAME = 'gift-card-manager-v2.1.0';
 const NETWORK_TIMEOUT_MS = 4000; // 4 seconds timeout for network requests
 
 // HTML error page template for navigation failures
