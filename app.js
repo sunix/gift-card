@@ -23,7 +23,10 @@ class GiftCardManager {
 
     // Check if a card is a fidelity card (no balance tracking)
     isFidelityCard(card) {
-        return card.currentBalance === null || card.currentBalance === undefined || card.currentBalance === 0;
+        // Fidelity cards have null or 0 initialBalance AND null or 0 currentBalance
+        // Gift cards have a positive initialBalance (even if currentBalance is 0 after spending)
+        return (card.initialBalance === null || card.initialBalance === undefined || card.initialBalance === 0) &&
+               (card.currentBalance === null || card.currentBalance === undefined || card.currentBalance === 0);
     }
 
     // Check if a card is expired
@@ -1014,22 +1017,29 @@ class GiftCardManager {
     }
 }
 
-// Initialize the app when DOM is loaded
-let giftCardManager;
+// Export for testing (Node.js environment)
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { GiftCardManager };
+}
 
-// Wait for i18n to be ready before initializing the app
-window.addEventListener('i18nReady', async () => {
-    giftCardManager = new GiftCardManager();
-    await giftCardManager.init();
-    
-    // Register service worker for PWA functionality
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js')
-            .then((registration) => {
-                console.log('Service Worker registered successfully:', registration.scope);
-            })
-            .catch((error) => {
-                console.log('Service Worker registration failed:', error);
-            });
-    }
-});
+// Initialize the app when DOM is loaded (browser environment)
+if (typeof window !== 'undefined') {
+    let giftCardManager;
+
+    // Wait for i18n to be ready before initializing the app
+    window.addEventListener('i18nReady', async () => {
+        giftCardManager = new GiftCardManager();
+        await giftCardManager.init();
+        
+        // Register service worker for PWA functionality
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js')
+                .then((registration) => {
+                    console.log('Service Worker registered successfully:', registration.scope);
+                })
+                .catch((error) => {
+                    console.log('Service Worker registration failed:', error);
+                });
+        }
+    });
+}

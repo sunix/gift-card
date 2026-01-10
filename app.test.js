@@ -60,41 +60,28 @@ global.alert = jest.fn();
 global.confirm = jest.fn();
 global.prompt = jest.fn();
 
-// Load the GiftCardManager class
-// We need to define it here since we can't load the file directly due to DOM dependencies
-class GiftCardManager {
-    static DEFAULT_ARCHIVED_STATE = false;
-    
+// Mock window object for browser-specific code
+global.window = global.window || {};
+
+// Import the actual GiftCardManager class from app.js
+const { GiftCardManager: BaseGiftCardManager } = require('./app.js');
+
+// Extend the real GiftCardManager for testing purposes
+class GiftCardManager extends BaseGiftCardManager {
     constructor() {
-        this.cards = this.loadCards();
-        this.stores = [];
-        this.draggedElement = null;
-        this.draggedCardId = null;
-    }
-
-    getLocaleForLanguage(lang) {
-        const localeMap = {
-            'fr': 'fr-FR',
-            'en': 'en-US',
-            'uk': 'uk-UA',
-            'ru': 'ru-RU'
+        super();
+        // Mock input property for testing
+        this.mockInput = {
+            cardNumber: '',
+            cardName: '',
+            initialBalance: '',
+            expiryDate: '',
+            transactionAmount: '',
+            transactionDescription: ''
         };
-        return localeMap[lang] || 'en-US';
     }
 
-    isFidelityCard(card) {
-        return card.currentBalance === null || card.currentBalance === undefined || card.currentBalance === 0;
-    }
-
-    loadCards() {
-        const stored = localStorage.getItem('giftCards');
-        return stored ? JSON.parse(stored) : [];
-    }
-
-    saveCards() {
-        localStorage.setItem('giftCards', JSON.stringify(this.cards));
-    }
-
+    // Override addCard to use mockInput instead of DOM elements
     addCard() {
         const cardNumber = this.mockInput.cardNumber.trim();
         const cardName = this.mockInput.cardName.trim();
@@ -141,6 +128,7 @@ class GiftCardManager {
         return newCard;
     }
 
+    // Override exportData to avoid DOM dependencies
     exportData() {
         const exportData = {
             version: '1.0',
@@ -150,6 +138,7 @@ class GiftCardManager {
         return exportData;
     }
 
+    // Override importData for testing
     importData(importedDataString) {
         try {
             const importedData = JSON.parse(importedDataString);
@@ -191,6 +180,7 @@ class GiftCardManager {
         }
     }
 
+    // Override addTransaction to use mockInput
     addTransaction(cardId) {
         const card = this.cards.find(c => c.id === cardId);
         if (!card) return;
@@ -226,6 +216,7 @@ class GiftCardManager {
         return transaction;
     }
 
+    // Override resetBalance for testing
     resetBalance(cardId) {
         const card = this.cards.find(c => c.id === cardId);
         if (!card) return;
@@ -267,39 +258,8 @@ class GiftCardManager {
         
         return transaction;
     }
-
-    // Mock input property for testing
-    mockInput = {
-        cardNumber: '',
-        cardName: '',
-        initialBalance: '',
-        expiryDate: '',
-        transactionAmount: '',
-        transactionDescription: ''
-    };
-
-    // Helper methods for expiry date checking
-    isFidelityCard(card) {
-        return card.currentBalance === null || card.currentBalance === undefined || card.currentBalance === 0;
-    }
-
-    isCardExpired(card) {
-        if (!card.expiryDate || this.isFidelityCard(card)) return false;
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const expiryDate = new Date(card.expiryDate);
-        return expiryDate < today;
-    }
-
-    isCardExpiringSoon(card) {
-        if (!card.expiryDate || this.isFidelityCard(card)) return false;
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const expiryDate = new Date(card.expiryDate);
-        const daysUntilExpiry = Math.floor((expiryDate - today) / (1000 * 60 * 60 * 24));
-        return daysUntilExpiry >= 0 && daysUntilExpiry <= 30;
-    }
 }
+
 
 describe('GiftCardManager', () => {
     let manager;
@@ -388,6 +348,63 @@ describe('GiftCardManager', () => {
             expect(manager.isFidelityCard(card)).toBe(true);
             expect(card.initialBalance).toBeNull();
             expect(card.currentBalance).toBeNull();
+        });
+
+        test('should NOT treat fully spent gift card as fidelity card', () => {
+            // Reproduce the bug: Carte cadeau Super U with initial balance 100, spent down to 0
+            manager.mockInput = {
+                cardNumber: 'xxxxxxxxxxx',
+                cardName: 'Carte cadeau Super U',
+                initialBalance: '100'
+            };
+
+            const card = manager.addCard();
+            const cardId = card.id;
+
+            // Verify it's initially a gift card
+            expect(card.initialBalance).toBe(100);
+            expect(card.currentBalance).toBe(100);
+            expect(manager.isFidelityCard(card)).toBe(false);
+
+            // Add transactions to spend the full balance (as in the issue)
+            manager.mockInput = { transactionAmount: '26.33', transactionDescription: 'Purchase' };
+            manager.addTransaction(cardId);
+
+            manager.mockInput = { transactionAmount: '23.73', transactionDescription: 'Purchase' };
+            manager.addTransaction(cardId);
+
+            manager.mockInput = { transactionAmount: '9.33', transactionDescription: 'Purchase' };
+            manager.addTransaction(cardId);
+
+            manager.mockInput = { transactionAmount: '26.54', transactionDescription: 'Purchase' };
+            manager.addTransaction(cardId);
+
+            manager.mockInput = { transactionAmount: '14.07', transactionDescription: 'Purchase' };
+            manager.addTransaction(cardId);
+
+            // After all transactions, balance should be 0
+            expect(card.currentBalance).toBe(0);
+
+            // A gift card that has been fully spent should still be a gift card, not a fidelity card
+            expect(manager.isFidelityCard(card)).toBe(false);
+        });
+
+        test('should treat fidelity card with initialBalance=0 and currentBalance=0 as fidelity card', () => {
+            // Test for existing fidelity cards that have numeric 0 instead of null
+            const fidelityCard = {
+                id: '12345',
+                number: '9999999999',
+                name: 'Old Fidelity Card',
+                initialBalance: 0,
+                currentBalance: 0,
+                transactions: [],
+                createdAt: new Date().toISOString(),
+                archived: false
+            };
+
+            manager.cards.push(fidelityCard);
+
+            expect(manager.isFidelityCard(fidelityCard)).toBe(true);
         });
     });
 
