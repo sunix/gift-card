@@ -83,7 +83,10 @@ class GiftCardManager {
     }
 
     isFidelityCard(card) {
-        return card.initialBalance === null || card.initialBalance === undefined;
+        // Fidelity cards have null or 0 initialBalance AND null or 0 currentBalance
+        // Gift cards have a positive initialBalance (even if currentBalance is 0 after spending)
+        return (card.initialBalance === null || card.initialBalance === undefined || card.initialBalance === 0) &&
+               (card.currentBalance === null || card.currentBalance === undefined || card.currentBalance === 0);
     }
 
     loadCards() {
@@ -280,7 +283,10 @@ class GiftCardManager {
 
     // Helper methods for expiry date checking
     isFidelityCard(card) {
-        return card.initialBalance === null || card.initialBalance === undefined;
+        // Fidelity cards have null or 0 initialBalance AND null or 0 currentBalance
+        // Gift cards have a positive initialBalance (even if currentBalance is 0 after spending)
+        return (card.initialBalance === null || card.initialBalance === undefined || card.initialBalance === 0) &&
+               (card.currentBalance === null || card.currentBalance === undefined || card.currentBalance === 0);
     }
 
     isCardExpired(card) {
@@ -425,9 +431,26 @@ describe('GiftCardManager', () => {
             // After all transactions, balance should be 0
             expect(card.currentBalance).toBe(0);
 
-            // BUG: This should be false, but currently returns true!
             // A gift card that has been fully spent should still be a gift card, not a fidelity card
             expect(manager.isFidelityCard(card)).toBe(false);
+        });
+
+        test('should treat fidelity card with initialBalance=0 and currentBalance=0 as fidelity card', () => {
+            // Test for existing fidelity cards that have numeric 0 instead of null
+            const fidelityCard = {
+                id: '12345',
+                number: '9999999999',
+                name: 'Old Fidelity Card',
+                initialBalance: 0,
+                currentBalance: 0,
+                transactions: [],
+                createdAt: new Date().toISOString(),
+                archived: false
+            };
+
+            manager.cards.push(fidelityCard);
+
+            expect(manager.isFidelityCard(fidelityCard)).toBe(true);
         });
     });
 
