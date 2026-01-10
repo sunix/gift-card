@@ -23,7 +23,7 @@ class GiftCardManager {
 
     // Check if a card is a fidelity card (no balance tracking)
     isFidelityCard(card) {
-        return card.currentBalance === null || card.currentBalance === undefined || card.currentBalance === 0;
+        return card.initialBalance === null || card.initialBalance === undefined;
     }
 
     // Check if a card is expired

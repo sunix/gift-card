@@ -83,7 +83,7 @@ class GiftCardManager {
     }
 
     isFidelityCard(card) {
-        return card.currentBalance === null || card.currentBalance === undefined || card.currentBalance === 0;
+        return card.initialBalance === null || card.initialBalance === undefined;
     }
 
     loadCards() {
@@ -280,7 +280,7 @@ class GiftCardManager {
 
     // Helper methods for expiry date checking
     isFidelityCard(card) {
-        return card.currentBalance === null || card.currentBalance === undefined || card.currentBalance === 0;
+        return card.initialBalance === null || card.initialBalance === undefined;
     }
 
     isCardExpired(card) {
@@ -388,6 +388,46 @@ describe('GiftCardManager', () => {
             expect(manager.isFidelityCard(card)).toBe(true);
             expect(card.initialBalance).toBeNull();
             expect(card.currentBalance).toBeNull();
+        });
+
+        test('should NOT treat fully spent gift card as fidelity card', () => {
+            // Reproduce the bug: Carte cadeau Super U with initial balance 100, spent down to 0
+            manager.mockInput = {
+                cardNumber: 'xxxxxxxxxxx',
+                cardName: 'Carte cadeau Super U',
+                initialBalance: '100'
+            };
+
+            const card = manager.addCard();
+            const cardId = card.id;
+
+            // Verify it's initially a gift card
+            expect(card.initialBalance).toBe(100);
+            expect(card.currentBalance).toBe(100);
+            expect(manager.isFidelityCard(card)).toBe(false);
+
+            // Add transactions to spend the full balance (as in the issue)
+            manager.mockInput = { transactionAmount: '26.33', transactionDescription: 'Purchase' };
+            manager.addTransaction(cardId);
+
+            manager.mockInput = { transactionAmount: '23.73', transactionDescription: 'Purchase' };
+            manager.addTransaction(cardId);
+
+            manager.mockInput = { transactionAmount: '9.33', transactionDescription: 'Purchase' };
+            manager.addTransaction(cardId);
+
+            manager.mockInput = { transactionAmount: '26.54', transactionDescription: 'Purchase' };
+            manager.addTransaction(cardId);
+
+            manager.mockInput = { transactionAmount: '14.07', transactionDescription: 'Purchase' };
+            manager.addTransaction(cardId);
+
+            // After all transactions, balance should be 0
+            expect(card.currentBalance).toBe(0);
+
+            // BUG: This should be false, but currently returns true!
+            // A gift card that has been fully spent should still be a gift card, not a fidelity card
+            expect(manager.isFidelityCard(card)).toBe(false);
         });
     });
 
