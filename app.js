@@ -909,12 +909,15 @@ class GiftCardManager {
     saveAPICredentials() {
         const apiKeyInput = document.getElementById('apiKeyInput');
         const clientIdInput = document.getElementById('clientIdInput');
+        const statusDiv = document.getElementById('apiConfigStatus');
         
         const apiKey = apiKeyInput.value.trim();
         const clientId = clientIdInput.value.trim();
 
         if (!apiKey || !clientId) {
-            alert(i18n.t('storage.credentials_required') || 'Please enter both API Key and Client ID');
+            // Show error inline
+            statusDiv.innerHTML = '❌ <span data-i18n="storage.credentials_required">Please enter both API Key and Client ID</span>';
+            statusDiv.style.color = '#721c24';
             return;
         }
 
@@ -925,10 +928,12 @@ class GiftCardManager {
         apiKeyInput.value = '';
         clientIdInput.value = '';
 
+        // Show success inline
+        statusDiv.innerHTML = '✅ <span data-i18n="storage.credentials_saved">API credentials saved successfully! You can now connect to Google Drive.</span>';
+        statusDiv.style.color = '#155724';
+
         // Update UI
         this.updateAPICredentialsUI();
-
-        alert(i18n.t('storage.credentials_saved') || 'API credentials saved successfully! You can now connect to Google Drive.');
     }
 
     // Update storage status UI

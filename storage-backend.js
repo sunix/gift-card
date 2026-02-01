@@ -278,7 +278,7 @@ class GoogleDriveBackend extends StorageBackend {
             // Load credentials from localStorage
             const credentials = this.getAPICredentials();
             if (!credentials || !credentials.apiKey || !credentials.clientId) {
-                reject(new Error('API credentials not configured. Please configure them in the Storage settings.'));
+                reject(new Error('API credentials not configured. Please configure them in the Storage section.'));
                 return;
             }
 
