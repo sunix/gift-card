@@ -60,10 +60,10 @@ To use the Google Drive backend, you need:
 5. Add Authorized JavaScript origins:
    - For local testing: `http://localhost:8000` (or your port)
    - For GitHub Pages: `https://yourusername.github.io`
-6. **Important:** For OAuth 2.0 Client ID used with Google Identity Services, you do NOT need to add redirect URIs
+6. **Authorized redirect URIs**: Leave this field empty (not required for Google Identity Services)
 7. Click "Create" and copy the Client ID
 
-**Note:** This application uses Google Identity Services (GIS), the modern authentication library recommended by Google. The deprecated `gapi.auth2` library is no longer supported for new applications.
+**Note:** This application uses Google Identity Services (GIS), the modern authentication library recommended by Google. The deprecated `gapi.auth2` library is no longer supported for new applications. GIS does not require redirect URIs.
 
 ### Step 5: Configure Your Credentials in the Application
 

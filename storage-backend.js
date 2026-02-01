@@ -332,9 +332,15 @@ class GoogleDriveBackend extends StorageBackend {
                     }
                 });
                 
-                // Use empty prompt to allow automatic re-authentication for returning users
-                // Only prompts for consent if user hasn't previously granted permissions
-                client.requestAccessToken({ prompt: '' });
+                // Try silent authentication first for returning users
+                // If it fails, user will be prompted to grant consent
+                try {
+                    client.requestAccessToken({ prompt: '' });
+                } catch (error) {
+                    // If silent auth fails, fall back to consent prompt
+                    console.log('Silent authentication failed, requesting consent');
+                    client.requestAccessToken({ prompt: 'consent' });
+                }
             });
 
             this.accessToken = tokenResponse.access_token;
@@ -376,12 +382,16 @@ class GoogleDriveBackend extends StorageBackend {
         try {
             // Revoke the token with proper error handling
             if (this.accessToken && typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
-                google.accounts.oauth2.revoke(this.accessToken, (done) => {
-                    if (done.error) {
-                        console.error('Token revocation failed:', done.error);
-                    } else {
-                        console.log('Token revoked successfully');
-                    }
+                await new Promise((resolve) => {
+                    google.accounts.oauth2.revoke(this.accessToken, (done) => {
+                        if (done.error) {
+                            console.error('Token revocation failed:', done.error);
+                        } else {
+                            console.log('Token revoked successfully');
+                        }
+                        // Always resolve to allow cleanup to proceed
+                        resolve();
+                    });
                 });
             }
             
