@@ -301,6 +301,15 @@ class GiftCardManager {
                 console.log('Cards were merged due to concurrent modifications');
                 this.cards = mergedCards;
                 this.renderCards();
+                
+                // If a card detail modal is currently open, refresh it
+                const modal = document.getElementById('cardDetailModal');
+                if (modal && modal.classList.contains('show')) {
+                    const cardIdInput = document.getElementById('transactionCardId');
+                    if (cardIdInput && cardIdInput.value) {
+                        this.showCardDetail(cardIdInput.value);
+                    }
+                }
             }
         } catch (error) {
             console.error('Unable to save cards:', error);

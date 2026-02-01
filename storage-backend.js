@@ -615,7 +615,7 @@ class GoogleDriveBackend extends StorageBackend {
                     card: {
                         ...newerCard,
                         transactions: mergedTransactions,
-                        balance: this.calculateBalance(mergedTransactions),
+                        currentBalance: this.calculateBalance(mergedTransactions, newerCard.initialBalance),
                         lastModified: new Date().toISOString()
                     },
                     source: 'merged'
@@ -627,10 +627,25 @@ class GoogleDriveBackend extends StorageBackend {
     }
     
     // Calculate balance from transactions
-    calculateBalance(transactions) {
-        if (transactions.length === 0) return 0;
+    calculateBalance(transactions, initialBalance = 0) {
+        if (transactions.length === 0) return initialBalance;
+        
+        // If last transaction has balanceAfter, use it
         const lastTransaction = transactions[transactions.length - 1];
-        return lastTransaction.balanceAfter || 0;
+        if (lastTransaction.balanceAfter !== undefined && lastTransaction.balanceAfter !== null) {
+            return lastTransaction.balanceAfter;
+        }
+        
+        // Otherwise calculate from all transactions
+        let balance = initialBalance;
+        for (const transaction of transactions) {
+            if (transaction.balanceAfter !== undefined && transaction.balanceAfter !== null) {
+                balance = transaction.balanceAfter;
+            } else {
+                balance += transaction.amount;
+            }
+        }
+        return balance;
     }
 
     // Internal method to save directly to Drive
