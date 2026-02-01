@@ -16,9 +16,13 @@ A simple, static web application to manage your gift cards locally in your brows
 - 📷 **Barcode Generation**: Automatically generate barcodes from card numbers in multiple formats (CODE128, CODE39, EAN-13, UPC, etc.)
 - 🌐 **Multi-language Support**: Available in English and French with easy language switching
 - 💾 **Local Storage**: All data stored securely in your browser's local storage
+- ☁️ **Google Drive Backend** (NEW): Optionally store your cards in Google Drive to share with others and sync across devices
+- 📡 **Offline Support with Auto-Sync**: Works offline and automatically syncs changes when connectivity is restored
+- 👤 **Owner Tracking**: Track who made each transaction when using shared Google Drive storage
 - 📥 **Import/Export**: Backup and restore your data with JSON export/import functionality
-- 🚀 **No Backend Required**: Pure static website, perfect for GitHub Pages
+- 🚀 **No Backend Required**: Pure static website, perfect for GitHub Pages (Google Drive is optional)
 - 📲 **Progressive Web App (PWA)**: Install on your device and use offline like a native app
+
 
 ## Screenshots
 
@@ -117,12 +121,50 @@ Keep your active card list organized by archiving cards you no longer use regula
 2. Select your preferred language (English or Français)
 3. The interface updates immediately
 
-### Step 7: Deleting a Card
+### Step 7: Using Google Drive Backend (Optional)
+
+Want to share cards with family members or sync across devices? Connect to Google Drive!
+
+1. Click **"☁️ Storage"** in the navigation menu
+2. Click **"Connect to Google Drive"**
+3. Sign in with your Google account and grant permissions
+4. Choose to:
+   - **Select an existing file** from your Drive
+   - **Create a new file** (recommended for first-time setup)
+5. Your cards are now stored in Google Drive!
+
+**Features when using Google Drive:**
+- 📡 **Automatic sync** across all devices
+- 📴 **Works offline** - changes sync when you're back online
+- 👥 **Share with others** by sharing the Google Drive file
+- 👤 **Owner tracking** - see who made each transaction
+- 🔄 **Real-time status** - see sync progress and connection status
+
+**Note:** You need to set up Google API credentials first. See [Google Drive Setup Guide](GOOGLE_DRIVE_SETUP.md) for detailed instructions.
+
+### Step 8: Changing Language
+1. Click the **"🌐 Language"** button in the top navigation
+2. Select your preferred language (English or Français)
+3. The interface updates immediately
+
+### Step 9: Deleting a Card
 1. Open the card detail modal
 2. Scroll to the bottom
 3. Click "Delete Card" button
 4. Confirm the deletion
 5. The card and all its transaction history will be permanently removed
+
+## Google Drive Setup
+
+To use the Google Drive backend feature, you need to set up API credentials from Google Cloud Console. This is completely optional - the app works great with just local storage.
+
+**Quick Setup:**
+1. Create a project in [Google Cloud Console](https://console.cloud.google.com/)
+2. Enable Google Drive API and Google Picker API
+3. Create an API Key and OAuth 2.0 Client ID
+4. Configure the credentials in `storage-backend.js`
+
+For detailed step-by-step instructions, see [Google Drive Setup Guide](GOOGLE_DRIVE_SETUP.md).
 
 ## Technology Stack
 
@@ -130,6 +172,7 @@ Keep your active card list organized by archiving cards you no longer use regula
 - **CSS3**: Responsive styling with mobile-first approach and custom store branding
 - **Vanilla JavaScript**: Application logic with ES6+ features (no frameworks needed)
 - **bwip-js**: Barcode generation library for creating scannable barcodes in multiple formats
+- **Google APIs**: Google Drive API and Picker API for cloud storage (optional)
 - **LocalStorage API**: Data persistence for cards, transactions, and preferences
 - **Service Worker**: Offline functionality and caching for PWA features
 - **Web App Manifest**: PWA installation support for mobile and desktop
@@ -185,6 +228,10 @@ The application includes comprehensive unit tests covering:
 - Import/Export functionality
 - Adding new cards (gift cards and fidelity cards)
 - Balance tracking and transaction management
+- Storage backend abstraction (Local Storage and Google Drive)
+- Offline sync queue and auto-sync functionality
+- Owner tracking for transactions
+- Data validation and persistence
 - Data validation and persistence
 
 To run the tests:
@@ -211,7 +258,17 @@ Tested on:
 
 ## Data Privacy
 
+**Local Storage (Default):**
 All your gift card data is stored locally in your browser. No data is sent to any server or third party.
+
+**Google Drive Backend (Optional):**
+When you connect to Google Drive:
+- Your cards are stored in your personal Google Drive account
+- Only you have access unless you explicitly share the file
+- The app uses the `drive.file` scope (only accesses files it creates)
+- Transaction owners are tracked by email address
+- You can disconnect anytime and switch back to local storage
+- Subject to Google's privacy policy
 
 ## GitHub Pages Deployment
 
