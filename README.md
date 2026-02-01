@@ -162,7 +162,9 @@ To use the Google Drive backend feature, you need to set up API credentials from
 1. Create a project in [Google Cloud Console](https://console.cloud.google.com/)
 2. Enable Google Drive API and Google Picker API
 3. Create an API Key and OAuth 2.0 Client ID
-4. Configure the credentials in `storage-backend.js`
+4. Enter the credentials in the app's Storage settings (they're stored in your browser only)
+
+**Important:** Your API credentials are configured via the UI and stored in localStorage, NOT in the source code. This makes it safe for public repositories and GitHub Pages deployment.
 
 For detailed step-by-step instructions, see [Google Drive Setup Guide](GOOGLE_DRIVE_SETUP.md).
 

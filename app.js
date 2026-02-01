@@ -828,6 +828,14 @@ class GiftCardManager {
 
     // Setup storage backend UI and event listeners
     setupStorageBackendUI() {
+        // Load and display existing API credentials status
+        this.updateAPICredentialsUI();
+
+        // Save API Credentials button
+        document.getElementById('saveAPICredsBtn').addEventListener('click', () => {
+            this.saveAPICredentials();
+        });
+
         // Update status display
         this.updateStorageStatusUI();
 
@@ -875,6 +883,52 @@ class GiftCardManager {
         document.getElementById('switchToLocalBtn').addEventListener('click', async () => {
             await this.switchToLocalStorage();
         });
+    }
+
+    // Update API credentials UI
+    updateAPICredentialsUI() {
+        const driveBackend = this.storageManager.getBackends()['google-drive'];
+        const credentials = driveBackend.getAPICredentials();
+        const statusDiv = document.getElementById('apiConfigStatus');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const clientIdInput = document.getElementById('clientIdInput');
+
+        if (credentials && credentials.apiKey && credentials.clientId) {
+            statusDiv.innerHTML = '✅ <span data-i18n="storage.credentials_configured">API credentials are configured</span>';
+            statusDiv.style.color = '#155724';
+            // Show masked values
+            apiKeyInput.placeholder = credentials.apiKey.substring(0, 8) + '...';
+            clientIdInput.placeholder = credentials.clientId.substring(0, 12) + '...';
+        } else {
+            statusDiv.innerHTML = '⚠️ <span data-i18n="storage.credentials_not_configured">API credentials not configured. Please enter your Google Cloud credentials below.</span>';
+            statusDiv.style.color = '#856404';
+        }
+    }
+
+    // Save API credentials
+    saveAPICredentials() {
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const clientIdInput = document.getElementById('clientIdInput');
+        
+        const apiKey = apiKeyInput.value.trim();
+        const clientId = clientIdInput.value.trim();
+
+        if (!apiKey || !clientId) {
+            alert(i18n.t('storage.credentials_required') || 'Please enter both API Key and Client ID');
+            return;
+        }
+
+        const driveBackend = this.storageManager.getBackends()['google-drive'];
+        driveBackend.saveAPICredentials(apiKey, clientId);
+
+        // Clear input fields for security
+        apiKeyInput.value = '';
+        clientIdInput.value = '';
+
+        // Update UI
+        this.updateAPICredentialsUI();
+
+        alert(i18n.t('storage.credentials_saved') || 'API credentials saved successfully! You can now connect to Google Drive.');
     }
 
     // Update storage status UI

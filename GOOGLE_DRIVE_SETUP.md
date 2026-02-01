@@ -62,19 +62,23 @@ To use the Google Drive backend, you need:
    - For GitHub Pages: `https://yourusername.github.io/gift-card/`
 7. Click "Create" and copy the Client ID
 
-### Step 5: Configure the Application
+### Step 5: Configure Your Credentials in the Application
 
-1. Open `storage-backend.js`
-2. Find the `initGoogleAPI` method (around line 165)
-3. Replace the placeholders:
-   ```javascript
-   await gapi.client.init({
-       apiKey: 'YOUR_API_KEY',  // Replace with your API key
-       clientId: 'YOUR_CLIENT_ID.apps.googleusercontent.com',  // Replace with your Client ID
-       discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
-       scope: 'https://www.googleapis.com/auth/drive.file'
-   });
-   ```
+**Important:** Do NOT commit your credentials to the repository. The application stores them securely in your browser's localStorage.
+
+1. Open the Gift Card Manager application
+2. Navigate to the "Storage" section (☁️ Storage in the navigation menu)
+3. In the "Google API Configuration" section:
+   - Paste your **API Key** (from Step 3)
+   - Paste your **Client ID** (from Step 4)
+4. Click **"Save Credentials"**
+5. Your credentials are now stored locally in your browser only
+
+**Security Note:** Your credentials are:
+- Stored in your browser's localStorage only
+- Never sent to any server (except Google's API servers)
+- Safe to use in a client-side application (this is Google's intended use case)
+- NOT stored in the code or repository
 
 ## Using the Google Drive Backend
 
@@ -82,10 +86,11 @@ To use the Google Drive backend, you need:
 
 1. Open the Gift Card Manager application
 2. Navigate to the "Storage" section (☁️ Storage in the navigation menu)
-3. Click "Connect to Google Drive"
-4. Sign in with your Google account when prompted
-5. Grant permissions for the app to access Drive files it creates
-6. Choose to either:
+3. Configure your API credentials (see Step 5 above) if not already done
+4. Click "Connect to Google Drive"
+5. Sign in with your Google account when prompted
+6. Grant permissions for the app to access Drive files it creates
+7. Choose to either:
    - Select an existing file (if you've used the feature before)
    - Create a new file (recommended for first-time use)
 
@@ -122,8 +127,15 @@ When using Google Drive backend:
 ### "Failed to connect to Google Drive"
 
 - Check that you've enabled the required APIs in Google Cloud Console
-- Verify your API key and Client ID are correct in `storage-backend.js`
+- Check your API credentials are configured correctly in the Storage settings
+- Verify your API key and Client ID in Google Cloud Console
 - Make sure your domain is authorized in the OAuth 2.0 client settings
+
+### "API credentials not configured"
+
+- Go to the Storage section in the app
+- Enter your API Key and Client ID from Google Cloud Console
+- Click "Save Credentials"
 
 ### "File selection cancelled"
 
@@ -144,10 +156,12 @@ When using Google Drive backend:
 
 ## Security Considerations
 
+- **Your API credentials are stored locally in your browser only** - they are never sent anywhere except to Google's API servers
 - The app only accesses files it creates (using `drive.file` scope)
 - Your Google Drive credentials are stored securely in your browser
 - No data is sent to any third-party servers besides Google Drive
 - You can revoke app access anytime from your Google Account settings
+- **Safe for public repositories:** Since credentials are configured via UI and stored in localStorage, there's no risk of exposing them in source code
 
 ## Privacy
 

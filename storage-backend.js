@@ -236,6 +236,37 @@ class GoogleDriveBackend extends StorageBackend {
         }
     }
 
+    // Get API credentials from localStorage
+    getAPICredentials() {
+        try {
+            const creds = localStorage.getItem('googleAPICredentials');
+            if (creds) {
+                return JSON.parse(creds);
+            }
+        } catch (error) {
+            console.warn('Unable to load API credentials:', error);
+        }
+        return null;
+    }
+
+    // Save API credentials to localStorage
+    saveAPICredentials(apiKey, clientId) {
+        try {
+            localStorage.setItem('googleAPICredentials', JSON.stringify({
+                apiKey,
+                clientId
+            }));
+        } catch (error) {
+            console.error('Unable to save API credentials:', error);
+        }
+    }
+
+    // Check if API credentials are configured
+    hasAPICredentials() {
+        const creds = this.getAPICredentials();
+        return creds && creds.apiKey && creds.clientId;
+    }
+
     // Initialize Google API
     async initGoogleAPI() {
         return new Promise((resolve, reject) => {
@@ -244,15 +275,18 @@ class GoogleDriveBackend extends StorageBackend {
                 return;
             }
 
+            // Load credentials from localStorage
+            const credentials = this.getAPICredentials();
+            if (!credentials || !credentials.apiKey || !credentials.clientId) {
+                reject(new Error('API credentials not configured. Please configure them in the Storage settings.'));
+                return;
+            }
+
             gapi.load('client:auth2', async () => {
                 try {
-                    // IMPORTANT: Replace these placeholders with your actual credentials
-                    // See GOOGLE_DRIVE_SETUP.md for instructions on how to obtain these
-                    // from Google Cloud Console. These values are safe to expose in
-                    // client-side code as they are intended for browser use.
                     await gapi.client.init({
-                        apiKey: 'YOUR_API_KEY', // Replace with your API key from Google Cloud Console
-                        clientId: 'YOUR_CLIENT_ID.apps.googleusercontent.com', // Replace with your OAuth 2.0 Client ID
+                        apiKey: credentials.apiKey,
+                        clientId: credentials.clientId,
                         discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
                         scope: 'https://www.googleapis.com/auth/drive.file'
                     });
