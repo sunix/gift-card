@@ -295,7 +295,13 @@ class GiftCardManager {
     // Save cards to storage backend
     async saveCards() {
         try {
-            await this.storageManager.saveCards(this.cards);
+            const mergedCards = await this.storageManager.saveCards(this.cards);
+            // If cards were merged (conflict resolution), update our local state
+            if (mergedCards && mergedCards !== this.cards) {
+                console.log('Cards were merged due to concurrent modifications');
+                this.cards = mergedCards;
+                this.renderCards();
+            }
         } catch (error) {
             console.error('Unable to save cards:', error);
             // You could show a user-friendly error message here
@@ -719,6 +725,7 @@ class GiftCardManager {
                         ${amountDisplay}
                     </div>
                     ${transaction.description ? `<div><small>${this.escapeHtml(transaction.description)}</small></div>` : ''}
+                    ${transaction.owner && transaction.owner !== 'local' ? `<div class="transaction-owner"><small>👤 ${this.escapeHtml(transaction.owner)}</small></div>` : ''}
                     <div class="transaction-balance">${i18n.t('transaction.balance_after', { amount: transaction.balanceAfter.toFixed(2) })}</div>
                 </div>
             `;

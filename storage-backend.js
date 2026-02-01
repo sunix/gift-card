@@ -564,10 +564,100 @@ class GoogleDriveBackend extends StorageBackend {
         }
     }
 
+    // Merge cards from two sources (conflict resolution)
+    mergeCards(localCards, remoteCards) {
+        const merged = {};
+        
+        // Index local cards by ID
+        localCards.forEach(card => {
+            merged[card.id] = { card, source: 'local' };
+        });
+        
+        // Merge remote cards
+        remoteCards.forEach(remoteCard => {
+            const localEntry = merged[remoteCard.id];
+            
+            if (!localEntry) {
+                // Card only exists remotely, add it
+                merged[remoteCard.id] = { card: remoteCard, source: 'remote' };
+            } else {
+                const localCard = localEntry.card;
+                
+                // Merge transactions from both sources
+                const allTransactions = {};
+                
+                // Add local transactions
+                localCard.transactions.forEach(t => {
+                    allTransactions[t.date + t.amount] = t;
+                });
+                
+                // Add remote transactions (newer ones win)
+                remoteCard.transactions.forEach(t => {
+                    const key = t.date + t.amount;
+                    if (!allTransactions[key] || new Date(t.date) >= new Date(allTransactions[key].date)) {
+                        allTransactions[key] = t;
+                    }
+                });
+                
+                // Sort transactions by date
+                const mergedTransactions = Object.values(allTransactions).sort((a, b) => 
+                    new Date(a.date) - new Date(b.date)
+                );
+                
+                // Use the card with the most recent modification
+                const localModified = new Date(localCard.lastModified || 0);
+                const remoteModified = new Date(remoteCard.lastModified || 0);
+                
+                const newerCard = remoteModified > localModified ? remoteCard : localCard;
+                
+                // Create merged card
+                merged[remoteCard.id] = {
+                    card: {
+                        ...newerCard,
+                        transactions: mergedTransactions,
+                        balance: this.calculateBalance(mergedTransactions),
+                        lastModified: new Date().toISOString()
+                    },
+                    source: 'merged'
+                };
+            }
+        });
+        
+        return Object.values(merged).map(entry => entry.card);
+    }
+    
+    // Calculate balance from transactions
+    calculateBalance(transactions) {
+        if (transactions.length === 0) return 0;
+        const lastTransaction = transactions[transactions.length - 1];
+        return lastTransaction.balanceAfter || 0;
+    }
+
     // Internal method to save directly to Drive
     async saveCardsToDrive(cards) {
         if (!this.accessToken || !this.fileId) {
             throw new Error('Not connected to Google Drive');
+        }
+        
+        // First, check if there are remote changes we need to merge
+        try {
+            const remoteData = await this.loadCardsFromDrive();
+            const remoteCards = remoteData.cards || [];
+            
+            // Check if remote was modified after our last sync
+            if (remoteData.lastModified && this.lastSyncTime) {
+                const remoteModified = new Date(remoteData.lastModified);
+                const lastSync = new Date(this.lastSyncTime);
+                
+                if (remoteModified > lastSync) {
+                    // Remote has changes, need to merge
+                    console.log('Detected remote changes, merging...');
+                    cards = this.mergeCards(cards, remoteCards);
+                }
+            }
+        } catch (error) {
+            // If we can't load remote, proceed with save (might be first save)
+            console.log('Could not check for remote changes, proceeding with save');
         }
 
         const data = {
@@ -594,6 +684,30 @@ class GoogleDriveBackend extends StorageBackend {
 
         this.lastSyncTime = new Date().toISOString();
         this.saveConfig();
+        
+        return cards; // Return merged cards
+    }
+    
+    // Load cards from Drive (internal, does not update cache)
+    async loadCardsFromDrive() {
+        if (!this.accessToken || !this.fileId) {
+            throw new Error('Not connected to Google Drive');
+        }
+        
+        const response = await fetch(
+            `https://www.googleapis.com/drive/v3/files/${this.fileId}?alt=media`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${this.accessToken}`
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`Failed to load cards: ${response.status}`);
+        }
+
+        return await response.json();
     }
 
     // Save cards to Google Drive
@@ -609,16 +723,23 @@ class GoogleDriveBackend extends StorageBackend {
         if (!this.isOnline) {
             console.log('Offline: queuing save operation');
             this.queueOfflineOperation('save', cards);
-            return; // Don't throw error, just queue for later
+            return cards; // Return original cards
         }
 
         try {
-            await this.saveCardsToDrive(cards);
+            const mergedCards = await this.saveCardsToDrive(cards);
+            // If cards were merged, update cache with merged version
+            if (mergedCards && mergedCards !== cards) {
+                this.cacheCards(mergedCards);
+                return mergedCards; // Return merged cards so caller can update
+            }
+            return cards;
         } catch (error) {
             console.error('Failed to save cards to Google Drive, queuing for later:', error);
             // Queue for retry when back online
             this.queueOfflineOperation('save', cards);
             // Don't throw - allow local operations to continue
+            return cards;
         }
     }
 
