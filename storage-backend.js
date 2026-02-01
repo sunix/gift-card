@@ -407,11 +407,49 @@ class GoogleDriveBackend extends StorageBackend {
         }
     }
 
+    // Ensure Google Picker API is loaded
+    async ensurePickerLoaded() {
+        return new Promise((resolve, reject) => {
+            // Check if picker is already loaded
+            if (typeof google !== 'undefined' && google.picker) {
+                resolve();
+                return;
+            }
+
+            // If not loaded, wait for it
+            if (typeof gapi === 'undefined') {
+                reject(new Error('Google API not loaded'));
+                return;
+            }
+
+            // Load picker explicitly
+            gapi.load('picker', {
+                callback: () => {
+                    if (typeof google !== 'undefined' && google.picker) {
+                        resolve();
+                    } else {
+                        reject(new Error('Failed to load Google Picker API'));
+                    }
+                },
+                onerror: () => {
+                    reject(new Error('Error loading Google Picker API'));
+                },
+                timeout: 5000,
+                ontimeout: () => {
+                    reject(new Error('Timeout loading Google Picker API'));
+                }
+            });
+        });
+    }
+
     // Select or create a file in Google Drive
     async selectFile() {
         if (!this.accessToken) {
             throw new Error('Not authenticated');
         }
+
+        // Ensure picker is loaded before using it
+        await this.ensurePickerLoaded();
 
         return new Promise((resolve, reject) => {
             // Use Google Picker API to select a file
