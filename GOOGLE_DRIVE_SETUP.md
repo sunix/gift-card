@@ -51,16 +51,19 @@ To use the Google Drive backend, you need:
    - Choose "External" user type
    - Fill in app name: "Gift Card Manager"
    - Add your email as support email
-   - Add scopes: `https://www.googleapis.com/auth/drive.file`
+   - Add scopes: 
+     - `https://www.googleapis.com/auth/drive.file`
+     - `https://www.googleapis.com/auth/userinfo.profile`
+     - `https://www.googleapis.com/auth/userinfo.email`
    - Add test users if needed
 4. For Application type, select "Web application"
 5. Add Authorized JavaScript origins:
    - For local testing: `http://localhost:8000` (or your port)
    - For GitHub Pages: `https://yourusername.github.io`
-6. Add Authorized redirect URIs:
-   - For local: `http://localhost:8000`
-   - For GitHub Pages: `https://yourusername.github.io/gift-card/`
+6. **Important:** For OAuth 2.0 Client ID used with Google Identity Services, you do NOT need to add redirect URIs
 7. Click "Create" and copy the Client ID
+
+**Note:** This application uses Google Identity Services (GIS), the modern authentication library recommended by Google. The deprecated `gapi.auth2` library is no longer supported for new applications.
 
 ### Step 5: Configure Your Credentials in the Application
 

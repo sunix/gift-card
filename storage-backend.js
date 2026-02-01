@@ -282,13 +282,15 @@ class GoogleDriveBackend extends StorageBackend {
                 return;
             }
 
-            gapi.load('client:auth2', async () => {
+            // Store credentials for later use with GIS
+            this.apiKey = credentials.apiKey;
+            this.clientId = credentials.clientId;
+
+            gapi.load('client', async () => {
                 try {
                     await gapi.client.init({
                         apiKey: credentials.apiKey,
-                        clientId: credentials.clientId,
-                        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
-                        scope: 'https://www.googleapis.com/auth/drive.file'
+                        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
                     });
                     resolve();
                 } catch (error) {
@@ -298,7 +300,7 @@ class GoogleDriveBackend extends StorageBackend {
         });
     }
 
-    // Authenticate with Google
+    // Authenticate with Google using Google Identity Services (GIS)
     async authenticate() {
         try {
             // Check if Google API is loaded
@@ -306,29 +308,59 @@ class GoogleDriveBackend extends StorageBackend {
                 throw new Error('Google API not loaded. Please check your internet connection.');
             }
 
+            // Check if Google Identity Services is loaded
+            if (typeof google === 'undefined' || !google.accounts) {
+                throw new Error('Google Identity Services not loaded. Please check your internet connection.');
+            }
+
             // Initialize if needed
-            if (!gapi.client) {
+            if (!gapi.client || !gapi.client.drive) {
                 await this.initGoogleAPI();
             }
 
-            // Sign in
-            const auth2 = gapi.auth2.getAuthInstance();
-            if (!auth2.isSignedIn.get()) {
-                await auth2.signIn();
+            // Use Google Identity Services for authentication
+            const client = google.accounts.oauth2.initTokenClient({
+                client_id: this.clientId,
+                scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
+                callback: '' // We'll set this in the promise
+            });
+
+            // Request access token
+            const tokenResponse = await new Promise((resolve, reject) => {
+                client.callback = (response) => {
+                    if (response.error) {
+                        reject(response);
+                    } else {
+                        resolve(response);
+                    }
+                };
+                client.requestAccessToken({ prompt: 'consent' });
+            });
+
+            this.accessToken = tokenResponse.access_token;
+
+            // Set the access token for gapi.client
+            gapi.client.setToken({
+                access_token: this.accessToken
+            });
+
+            // Get user info using the access token
+            const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+                headers: {
+                    'Authorization': `Bearer ${this.accessToken}`
+                }
+            });
+
+            if (!userInfoResponse.ok) {
+                throw new Error('Failed to get user info');
             }
 
-            // Get access token
-            const user = auth2.currentUser.get();
-            const authResponse = user.getAuthResponse();
-            this.accessToken = authResponse.access_token;
-
-            // Get user info
-            const profile = user.getBasicProfile();
+            const userInfo = await userInfoResponse.json();
             this.userInfo = {
-                id: profile.getId(),
-                name: profile.getName(),
-                email: profile.getEmail(),
-                picture: profile.getImageUrl()
+                id: userInfo.id,
+                name: userInfo.name,
+                email: userInfo.email,
+                picture: userInfo.picture
             };
 
             this.saveConfig();
@@ -342,12 +374,18 @@ class GoogleDriveBackend extends StorageBackend {
     // Sign out from Google
     async signOut() {
         try {
-            if (typeof gapi !== 'undefined' && gapi.auth2) {
-                const auth2 = gapi.auth2.getAuthInstance();
-                if (auth2) {
-                    await auth2.signOut();
-                }
+            // Revoke the token
+            if (this.accessToken && typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+                google.accounts.oauth2.revoke(this.accessToken, () => {
+                    console.log('Token revoked');
+                });
             }
+            
+            // Clear the token from gapi.client
+            if (typeof gapi !== 'undefined' && gapi.client) {
+                gapi.client.setToken(null);
+            }
+            
             this.clearConfig();
         } catch (error) {
             console.error('Google sign out failed:', error);
@@ -371,6 +409,7 @@ class GoogleDriveBackend extends StorageBackend {
             const picker = new google.picker.PickerBuilder()
                 .addView(google.picker.ViewId.DOCS)
                 .setOAuthToken(this.accessToken)
+                .setDeveloperKey(this.apiKey)
                 .setCallback((data) => {
                     if (data.action === google.picker.Action.PICKED) {
                         const file = data.docs[0];
