@@ -286,7 +286,7 @@ class GoogleDriveBackend extends StorageBackend {
             this.apiKey = credentials.apiKey;
             this.clientId = credentials.clientId;
 
-            gapi.load('client', async () => {
+            gapi.load('client:picker', async () => {
                 try {
                     await gapi.client.init({
                         apiKey: credentials.apiKey,
