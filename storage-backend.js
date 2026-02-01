@@ -1,6 +1,9 @@
 // Storage Backend Abstraction Layer
 // Provides interface for different storage backends (LocalStorage, Google Drive)
 
+// Application version (matches package.json)
+const APP_VERSION = '2.1.0';
+
 // Base Storage Backend Interface
 class StorageBackend {
     constructor() {
@@ -243,9 +246,13 @@ class GoogleDriveBackend extends StorageBackend {
 
             gapi.load('client:auth2', async () => {
                 try {
+                    // IMPORTANT: Replace these placeholders with your actual credentials
+                    // See GOOGLE_DRIVE_SETUP.md for instructions on how to obtain these
+                    // from Google Cloud Console. These values are safe to expose in
+                    // client-side code as they are intended for browser use.
                     await gapi.client.init({
-                        apiKey: 'YOUR_API_KEY', // Will be configured by user
-                        clientId: 'YOUR_CLIENT_ID.apps.googleusercontent.com', // Will be configured by user
+                        apiKey: 'YOUR_API_KEY', // Replace with your API key from Google Cloud Console
+                        clientId: 'YOUR_CLIENT_ID.apps.googleusercontent.com', // Replace with your OAuth 2.0 Client ID
                         discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
                         scope: 'https://www.googleapis.com/auth/drive.file'
                     });
@@ -440,7 +447,7 @@ class GoogleDriveBackend extends StorageBackend {
 
         const data = {
             cards: cards,
-            version: '2.1.0',
+            version: APP_VERSION,
             lastModified: new Date().toISOString()
         };
 

@@ -232,7 +232,6 @@ The application includes comprehensive unit tests covering:
 - Offline sync queue and auto-sync functionality
 - Owner tracking for transactions
 - Data validation and persistence
-- Data validation and persistence
 
 To run the tests:
 ```bash

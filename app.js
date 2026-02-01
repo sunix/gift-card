@@ -271,8 +271,8 @@ class GiftCardManager {
 
     // Load cards from localStorage
     loadCards() {
-        // This method is now synchronous but returns a promise for compatibility
-        // The actual loading will be done asynchronously in init()
+        // Synchronous method for backward compatibility with existing code
+        // For async loading, use loadCardsAsync() instead
         try {
             const stored = localStorage.getItem('giftCards');
             return stored ? JSON.parse(stored) : [];
