@@ -319,22 +319,22 @@ class GoogleDriveBackend extends StorageBackend {
             }
 
             // Use Google Identity Services for authentication
-            const client = google.accounts.oauth2.initTokenClient({
-                client_id: this.clientId,
-                scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
-                callback: '' // We'll set this in the promise
-            });
-
-            // Request access token
             const tokenResponse = await new Promise((resolve, reject) => {
-                client.callback = (response) => {
-                    if (response.error) {
-                        reject(response);
-                    } else {
-                        resolve(response);
+                const client = google.accounts.oauth2.initTokenClient({
+                    client_id: this.clientId,
+                    scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
+                    callback: (response) => {
+                        if (response.error) {
+                            reject(response);
+                        } else {
+                            resolve(response);
+                        }
                     }
-                };
-                client.requestAccessToken({ prompt: 'consent' });
+                });
+                
+                // Use empty prompt to allow automatic re-authentication for returning users
+                // Only prompts for consent if user hasn't previously granted permissions
+                client.requestAccessToken({ prompt: '' });
             });
 
             this.accessToken = tokenResponse.access_token;
@@ -374,10 +374,14 @@ class GoogleDriveBackend extends StorageBackend {
     // Sign out from Google
     async signOut() {
         try {
-            // Revoke the token
+            // Revoke the token with proper error handling
             if (this.accessToken && typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
-                google.accounts.oauth2.revoke(this.accessToken, () => {
-                    console.log('Token revoked');
+                google.accounts.oauth2.revoke(this.accessToken, (done) => {
+                    if (done.error) {
+                        console.error('Token revocation failed:', done.error);
+                    } else {
+                        console.log('Token revoked successfully');
+                    }
                 });
             }
             
