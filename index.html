@@ -208,6 +208,7 @@
                 <a href="#introSection" class="nav-link" data-i18n="nav.introduction">📖 Introduction</a>
                 <a href="#cardsList" class="nav-link" data-i18n="nav.my_cards">🎁 My Cards</a>
                 <a href="#addCardSection" class="nav-link" data-i18n="nav.add_card">➕ Add Card</a>
+                <a href="#storageBackendSection" class="nav-link" data-i18n="nav.storage">☁️ Storage</a>
                 <a href="#importExportSection" class="nav-link" data-i18n="nav.import_export">💾 Import/Export</a>
                 <div class="language-selector" id="languageSelector">
                     <button class="nav-link" id="languageButton" data-i18n="nav.language">🌐 Language</button>
@@ -301,6 +302,49 @@
                 </form>
             </section>
 
+            <!-- Storage Backend Section -->
+            <section class="storage-backend-section" id="storageBackendSection">
+                <h2 data-i18n="storage.title">Storage Backend</h2>
+                <div id="storageStatus" style="padding: 15px; background: #f5f5f5; border-radius: 8px; margin-bottom: 15px;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                        <span style="font-size: 1.5rem;" id="storageStatusIcon">💾</span>
+                        <div style="flex: 1;">
+                            <div style="font-weight: bold; margin-bottom: 5px;" id="storageStatusText">Local Storage</div>
+                            <div style="font-size: 0.9rem; color: #666;" id="storageStatusInfo">Data stored locally in browser</div>
+                        </div>
+                    </div>
+                    <div id="googleDriveInfo" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <img id="googleUserPicture" src="" alt="" style="width: 32px; height: 32px; border-radius: 50%; display: none;">
+                            <div>
+                                <div id="googleUserName" style="font-weight: 500;"></div>
+                                <div id="googleUserEmail" style="font-size: 0.85rem; color: #666;"></div>
+                            </div>
+                        </div>
+                        <div id="lastSyncTime" style="font-size: 0.85rem; color: #666; margin-top: 8px;"></div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button id="connectGoogleDriveBtn" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px;">
+                        <span>🔗</span>
+                        <span data-i18n="storage.connect_google_drive">Connect to Google Drive</span>
+                    </button>
+                    <button id="disconnectGoogleDriveBtn" class="btn btn-secondary" style="display: none;">
+                        <span data-i18n="storage.disconnect">Disconnect</span>
+                    </button>
+                    <button id="selectDriveFileBtn" class="btn btn-secondary" style="display: none;">
+                        <span data-i18n="storage.select_file">Select Drive File</span>
+                    </button>
+                    <button id="createDriveFileBtn" class="btn btn-secondary" style="display: none;">
+                        <span data-i18n="storage.create_file">Create New File</span>
+                    </button>
+                    <button id="switchToLocalBtn" class="btn btn-secondary" style="display: none;">
+                        <span data-i18n="storage.switch_to_local">Switch to Local Storage</span>
+                    </button>
+                </div>
+                <p style="margin-top: 10px; font-size: 0.9rem; color: #666;" data-i18n="storage.description">Connect to Google Drive to save and share your cards with others.</p>
+            </section>
+
             <!-- Import/Export Section -->
             <section class="import-export-section" id="importExportSection">
                 <h2 data-i18n="export.title">Data Management</h2>
@@ -328,9 +372,14 @@
         </footer>
     </div>
 
+<!-- Google API Client Library -->
+<script src="https://apis.google.com/js/api.js"></script>
+<script src="https://apis.google.com/js/platform.js"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/bwip-js@3/dist/bwip-js.min.js"></script>
 <script src="i18n.js"></script>
 <script src="barcode.js"></script>
+<script src="storage-backend.js"></script>
 <script src="app.js"></script>
 
 <!-- Menu toggle and language selector scripts -->
