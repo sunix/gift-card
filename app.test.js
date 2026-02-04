@@ -63,6 +63,16 @@ global.prompt = jest.fn();
 // Mock window object for browser-specific code
 global.window = global.window || {};
 
+// Mock navigator.onLine
+Object.defineProperty(global.navigator, 'onLine', {
+    writable: true,
+    value: true
+});
+
+// Import storage backend classes
+const { StorageManager } = require('./storage-backend.js');
+global.StorageManager = StorageManager;
+
 // Import the actual GiftCardManager class from app.js
 const { GiftCardManager: BaseGiftCardManager } = require('./app.js');
 
@@ -968,7 +978,7 @@ describe('GiftCardManager', () => {
             expect(parsedCards[0].name).toBe('Persistence Test');
         });
 
-        test('should load cards from localStorage', () => {
+        test('should load cards from localStorage', async () => {
             const testCards = [
                 {
                     id: '123',
@@ -985,6 +995,7 @@ describe('GiftCardManager', () => {
             localStorage.setItem('giftCards', JSON.stringify(testCards));
 
             const newManager = new GiftCardManager();
+            await newManager.loadCardsAsync(); // Load cards asynchronously
             
             expect(newManager.cards).toHaveLength(1);
             expect(newManager.cards[0].name).toBe('Loaded Card');

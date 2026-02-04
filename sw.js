@@ -86,7 +86,8 @@ self.addEventListener('fetch', (event) => {
           return fetch(event.request)
             .then((response) => {
               // Navigation requests are always same-origin, so response.ok is reliable
-              if (response && response.ok) {
+              // Only cache GET requests (Cache API doesn't support other methods)
+              if (response && response.ok && event.request.method === 'GET') {
                 const responseToCache = response.clone();
                 caches.open(CACHE_NAME)
                   .then((cache) => {
@@ -140,7 +141,8 @@ self.addEventListener('fetch', (event) => {
                 return response;
               }
               
-              const shouldCache = response.ok || response.type === 'opaque';
+              // Only cache GET requests (Cache API doesn't support PATCH, POST, PUT, DELETE)
+              const shouldCache = (response.ok || response.type === 'opaque') && event.request.method === 'GET';
               
               if (shouldCache) {
                 // Clone the response to cache it

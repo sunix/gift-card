@@ -359,6 +359,12 @@ h2 {
     color: #666;
 }
 
+.transaction-owner {
+    font-size: 0.85rem;
+    color: #666;
+    margin-top: 3px;
+}
+
 .empty-state {
     text-align: center;
     padding: 40px 20px;

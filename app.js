@@ -4,10 +4,12 @@ class GiftCardManager {
     static DEFAULT_ARCHIVED_STATE = false;
     
     constructor() {
-        this.cards = this.loadCards();
+        this.storageManager = new StorageManager();
+        this.cards = [];
         this.stores = [];
         this.draggedElement = null;
         this.draggedCardId = null;
+        this.currentUser = null; // For owner tracking
     }
 
     // Get locale string for date formatting based on current language
@@ -145,11 +147,17 @@ class GiftCardManager {
         // Load stores configuration first
         await this.loadStores();
         
+        // Load cards from storage backend
+        await this.loadCardsAsync();
+        
         // Handle introduction section positioning
         this.positionIntroSection();
         
         // Load cards on startup
         this.renderCards();
+        
+        // Set up storage backend UI
+        this.setupStorageBackendUI();
         
         // Set up event listeners
         document.getElementById('addCardForm').addEventListener('submit', (e) => {
@@ -200,6 +208,41 @@ class GiftCardManager {
                 this.renderArchivedCards();
             }
         });
+        
+        // Listen for Google Drive file changes (from polling)
+        window.addEventListener('driveFileChanged', async (e) => {
+            console.log('Drive file changed, reloading cards...', e.detail);
+            try {
+                // Reload cards from Drive
+                await this.loadCardsAsync();
+                // Re-render UI
+                this.renderCards();
+                // Re-render archived cards if visible
+                const archivedSection = document.getElementById('archivedCardsSection');
+                if (archivedSection && archivedSection.style.display !== 'none') {
+                    this.renderArchivedCards();
+                }
+                // Update modal if open
+                const modal = document.getElementById('cardDetailModal');
+                if (modal && modal.style.display === 'block') {
+                    const cardId = modal.dataset.cardId;
+                    if (cardId) {
+                        const card = this.cards.find(c => c.id === cardId);
+                        if (card) {
+                            this.openCardModal(card);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to reload cards after Drive change:', error);
+            }
+        });
+        
+        // Start polling if already connected to Google Drive
+        const driveBackend = this.storageManager.getBackends()['google-drive'];
+        if (driveBackend && await driveBackend.isAvailable()) {
+            driveBackend.startPolling().catch(err => console.error('Failed to start polling:', err));
+        }
     }
     
     // Handle navigation based on URL hash
@@ -211,6 +254,7 @@ class GiftCardManager {
             'archivedCardsSection': { id: 'archivedCardsSection', visibleOn: ['#archivedCardsSection'] },
             'cardsList': { id: 'cardsList', visibleOn: ['default'] },
             'addCardSection': { id: 'addCardSection', visibleOn: ['default'] },
+            'storageBackendSection': { id: 'storageBackendSection', visibleOn: ['default'] },
             'importExportSection': { id: 'importExportSection', visibleOn: ['default'] },
             'introSection': { id: 'introSection', visibleOn: ['default'] }
         };
@@ -262,6 +306,8 @@ class GiftCardManager {
 
     // Load cards from localStorage
     loadCards() {
+        // Synchronous method for backward compatibility with existing code
+        // For async loading, use loadCardsAsync() instead
         try {
             const stored = localStorage.getItem('giftCards');
             return stored ? JSON.parse(stored) : [];
@@ -271,12 +317,37 @@ class GiftCardManager {
         }
     }
 
-    // Save cards to localStorage
-    saveCards() {
+    // Load cards asynchronously using storage backend
+    async loadCardsAsync() {
         try {
-            localStorage.setItem('giftCards', JSON.stringify(this.cards));
+            this.cards = await this.storageManager.loadCards();
         } catch (error) {
-            console.error('Unable to save cards to localStorage:', error);
+            console.error('Failed to load cards:', error);
+            this.cards = [];
+        }
+    }
+
+    // Save cards to storage backend
+    async saveCards() {
+        try {
+            const mergedCards = await this.storageManager.saveCards(this.cards);
+            // If cards were merged (conflict resolution), update our local state
+            if (mergedCards && mergedCards !== this.cards) {
+                console.log('Cards were merged due to concurrent modifications');
+                this.cards = mergedCards;
+                this.renderCards();
+                
+                // If a card detail modal is currently open, refresh it
+                const modal = document.getElementById('cardDetailModal');
+                if (modal && modal.classList.contains('show')) {
+                    const cardIdInput = document.getElementById('transactionCardId');
+                    if (cardIdInput && cardIdInput.value) {
+                        this.showCardDetail(cardIdInput.value);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Unable to save cards:', error);
             // You could show a user-friendly error message here
         }
     }
@@ -698,6 +769,7 @@ class GiftCardManager {
                         ${amountDisplay}
                     </div>
                     ${transaction.description ? `<div><small>${this.escapeHtml(transaction.description)}</small></div>` : ''}
+                    ${transaction.owner && transaction.owner !== 'local' ? `<div class="transaction-owner"><small>👤 ${this.escapeHtml(transaction.owner)}</small></div>` : ''}
                     <div class="transaction-balance">${i18n.t('transaction.balance_after', { amount: transaction.balanceAfter.toFixed(2) })}</div>
                 </div>
             `;
@@ -730,7 +802,8 @@ class GiftCardManager {
             amount: -amount, // Negative for spending
             type: 'spend',
             balanceAfter: newBalance,
-            description: description || 'Purchase'
+            description: description || 'Purchase',
+            owner: this.currentUser?.email || 'local' // Track who made the transaction
         };
 
         card.transactions.push(transaction);
@@ -776,7 +849,8 @@ class GiftCardManager {
             amount: newBalance - card.currentBalance, // Difference to add
             type: 'reset',
             balanceAfter: newBalance,
-            description: i18n.t('transaction.reset_description', { amount: newBalance.toFixed(2) })
+            description: i18n.t('transaction.reset_description', { amount: newBalance.toFixed(2) }),
+            owner: this.currentUser?.email || 'local' // Track who reset the balance
         };
 
         card.transactions.push(transaction);
@@ -801,6 +875,332 @@ class GiftCardManager {
         this.closeModal();
         this.renderCards();
         this.updateArchivedViewIfVisible();
+    }
+
+    // Setup storage backend UI and event listeners
+    setupStorageBackendUI() {
+        // Load and display existing API credentials status
+        this.updateAPICredentialsUI();
+
+        // Save Client ID button
+        document.getElementById('saveAPICredsBtn').addEventListener('click', () => {
+            this.saveClientId();
+        });
+
+        // Update status display
+        this.updateStorageStatusUI();
+
+        // Listen for sync events
+        window.addEventListener('storageSynced', () => {
+            this.updateStorageStatusUI();
+            console.log('Storage synced successfully');
+        });
+
+        window.addEventListener('storageSyncFailed', (e) => {
+            this.updateStorageStatusUI();
+            console.error('Storage sync failed:', e.detail.error);
+        });
+
+        // Listen for online/offline events to update UI
+        window.addEventListener('online', () => {
+            this.updateStorageStatusUI();
+        });
+
+        window.addEventListener('offline', () => {
+            this.updateStorageStatusUI();
+        });
+
+        // Connect to Google Drive button
+        document.getElementById('connectGoogleDriveBtn').addEventListener('click', async () => {
+            await this.connectToGoogleDrive();
+        });
+
+        // Disconnect from Google Drive button
+        document.getElementById('disconnectGoogleDriveBtn').addEventListener('click', async () => {
+            await this.disconnectFromGoogleDrive();
+        });
+
+        // Select Drive File button
+        document.getElementById('selectDriveFileBtn').addEventListener('click', async () => {
+            await this.selectDriveFile();
+        });
+
+        // Create Drive File button
+        document.getElementById('createDriveFileBtn').addEventListener('click', async () => {
+            await this.createDriveFile();
+        });
+
+        // Switch to Local Storage button
+        document.getElementById('switchToLocalBtn').addEventListener('click', async () => {
+            await this.switchToLocalStorage();
+        });
+    }
+
+    // Update Client ID UI
+    updateAPICredentialsUI() {
+        const driveBackend = this.storageManager.getBackends()['google-drive'];
+        const clientId = driveBackend.getClientId();
+        const isUsingDefault = driveBackend.isUsingDefaultClientId();
+        const statusDiv = document.getElementById('apiConfigStatus');
+        const clientIdInput = document.getElementById('clientIdInput');
+
+        if (isUsingDefault) {
+            // Using default Client ID
+            statusDiv.innerHTML = '✅ <span data-i18n="storage.client_id_using_default">Using default Client ID (works out-of-the-box). Developers can enter a custom Client ID below if needed.</span>';
+            statusDiv.style.color = '#155724';
+            clientIdInput.placeholder = clientId.substring(0, 12) + '... (default)';
+        } else {
+            // Using custom Client ID
+            statusDiv.innerHTML = '✅ <span data-i18n="storage.client_id_custom_configured">Using custom Client ID</span>';
+            statusDiv.style.color = '#155724';
+            // Show masked value
+            clientIdInput.placeholder = clientId.substring(0, 12) + '... (custom)';
+        }
+    }
+
+    // Save Client ID
+    saveClientId() {
+        const clientIdInput = document.getElementById('clientIdInput');
+        const statusDiv = document.getElementById('apiConfigStatus');
+        
+        const clientId = clientIdInput.value.trim();
+
+        if (!clientId) {
+            // Show error inline
+            statusDiv.innerHTML = '❌ <span data-i18n="storage.client_id_required">Please enter Client ID</span>';
+            statusDiv.style.color = '#721c24';
+            return;
+        }
+
+        const driveBackend = this.storageManager.getBackends()['google-drive'];
+        driveBackend.saveClientId(clientId);
+
+        // Clear input field for security
+        clientIdInput.value = '';
+
+        // Show success inline
+        statusDiv.innerHTML = '✅ <span data-i18n="storage.client_id_saved">Client ID saved successfully! You can now connect to Google Drive.</span>';
+        statusDiv.style.color = '#155724';
+
+        // Update UI
+        this.updateAPICredentialsUI();
+    }
+
+    // Update storage status UI
+    async updateStorageStatusUI() {
+        const status = await this.storageManager.getStatus();
+        const statusIcon = document.getElementById('storageStatusIcon');
+        const statusText = document.getElementById('storageStatusText');
+        const statusInfo = document.getElementById('storageStatusInfo');
+        const googleDriveInfo = document.getElementById('googleDriveInfo');
+
+        // Update current user for owner tracking
+        if (status.userInfo) {
+            this.currentUser = status.userInfo;
+        }
+
+        // Update icon and text based on backend type
+        if (status.type === 'google-drive') {
+            // Show online/offline status
+            if (status.isOnline === false) {
+                statusIcon.textContent = '📴'; // Offline icon
+            } else if (status.pendingSync) {
+                statusIcon.textContent = '🔄'; // Syncing icon
+            } else {
+                statusIcon.textContent = '☁️'; // Online icon
+            }
+            
+            statusText.textContent = i18n.t('storage.google_drive') || 'Google Drive';
+            
+            if (status.connected) {
+                let infoText = status.info;
+                
+                // Add offline/sync status
+                if (status.isOnline === false) {
+                    infoText += ' (Offline - changes will sync when online)';
+                } else if (status.pendingSync) {
+                    infoText += ` (Syncing ${status.queueSize} changes...)`;
+                }
+                
+                statusInfo.textContent = infoText;
+                
+                // Show Google Drive specific info
+                if (status.userInfo) {
+                    const userPicture = document.getElementById('googleUserPicture');
+                    const userName = document.getElementById('googleUserName');
+                    const userEmail = document.getElementById('googleUserEmail');
+                    const lastSyncTime = document.getElementById('lastSyncTime');
+                    
+                    if (status.userInfo.picture) {
+                        userPicture.src = status.userInfo.picture;
+                        userPicture.style.display = 'block';
+                    }
+                    userName.textContent = status.userInfo.name;
+                    userEmail.textContent = status.userInfo.email;
+                    
+                    if (status.lastSyncTime) {
+                        const syncDate = new Date(status.lastSyncTime);
+                        const currentLang = i18n.getCurrentLanguage();
+                        const locale = this.getLocaleForLanguage(currentLang);
+                        lastSyncTime.textContent = i18n.t('storage.last_sync') + ': ' + syncDate.toLocaleString(locale);
+                    }
+                    
+                    googleDriveInfo.style.display = 'block';
+                }
+                
+                // Show/hide buttons
+                document.getElementById('connectGoogleDriveBtn').style.display = 'none';
+                document.getElementById('disconnectGoogleDriveBtn').style.display = 'inline-block';
+                document.getElementById('selectDriveFileBtn').style.display = 'inline-block';
+                document.getElementById('createDriveFileBtn').style.display = 'inline-block';
+                document.getElementById('switchToLocalBtn').style.display = 'inline-block';
+            } else {
+                statusInfo.textContent = i18n.t('storage.not_connected') || 'Not connected';
+                googleDriveInfo.style.display = 'none';
+                
+                document.getElementById('connectGoogleDriveBtn').style.display = 'inline-block';
+                document.getElementById('disconnectGoogleDriveBtn').style.display = 'none';
+                document.getElementById('selectDriveFileBtn').style.display = 'none';
+                document.getElementById('createDriveFileBtn').style.display = 'none';
+                document.getElementById('switchToLocalBtn').style.display = 'none';
+            }
+        } else {
+            // Local storage
+            statusIcon.textContent = '💾';
+            statusText.textContent = i18n.t('storage.local_storage') || 'Local Storage';
+            statusInfo.textContent = i18n.t('storage.local_info') || 'Data stored locally in browser';
+            googleDriveInfo.style.display = 'none';
+            
+            document.getElementById('connectGoogleDriveBtn').style.display = 'inline-block';
+            document.getElementById('disconnectGoogleDriveBtn').style.display = 'none';
+            document.getElementById('selectDriveFileBtn').style.display = 'none';
+            document.getElementById('createDriveFileBtn').style.display = 'none';
+            document.getElementById('switchToLocalBtn').style.display = 'none';
+        }
+    }
+
+    // Connect to Google Drive
+    async connectToGoogleDrive() {
+        try {
+            const driveBackend = this.storageManager.getBackends()['google-drive'];
+            
+            // Authenticate
+            await driveBackend.authenticate();
+            
+            // Prompt to select or create file
+            const choice = confirm(i18n.t('storage.select_existing_file') || 
+                'Do you want to select an existing file? Click Cancel to create a new file.');
+            
+            if (choice) {
+                await driveBackend.selectFile();
+            } else {
+                await driveBackend.createFile('gift-cards.json');
+            }
+            
+            // Switch to Google Drive backend
+            await this.storageManager.switchBackend('google-drive');
+            
+            // Load cards from Drive
+            await this.loadCardsAsync();
+            this.renderCards();
+            
+            // Update UI
+            await this.updateStorageStatusUI();
+            
+            alert(i18n.t('storage.connected_success') || 'Successfully connected to Google Drive!');
+        } catch (error) {
+            console.error('Failed to connect to Google Drive:', error);
+            alert(i18n.t('storage.connection_failed') || 
+                'Failed to connect to Google Drive: ' + error.message);
+        }
+    }
+
+    // Disconnect from Google Drive
+    async disconnectFromGoogleDrive() {
+        try {
+            if (!confirm(i18n.t('storage.disconnect_confirm') || 
+                'Are you sure you want to disconnect from Google Drive? Your data will remain in Google Drive but you will switch to local storage.')) {
+                return;
+            }
+            
+            const driveBackend = this.storageManager.getBackends()['google-drive'];
+            await driveBackend.signOut();
+            
+            // Switch back to local storage
+            await this.storageManager.switchBackend('local');
+            
+            // Update UI
+            await this.updateStorageStatusUI();
+            
+            alert(i18n.t('storage.disconnected_success') || 'Disconnected from Google Drive');
+        } catch (error) {
+            console.error('Failed to disconnect:', error);
+            alert(i18n.t('storage.disconnect_failed') || 'Failed to disconnect: ' + error.message);
+        }
+    }
+
+    // Select a different Drive file
+    async selectDriveFile() {
+        try {
+            const driveBackend = this.storageManager.getBackends()['google-drive'];
+            await driveBackend.selectFile();
+            
+            // Load cards from new file
+            await this.loadCardsAsync();
+            this.renderCards();
+            
+            // Update UI
+            await this.updateStorageStatusUI();
+            
+            alert(i18n.t('storage.file_selected') || 'File selected successfully');
+        } catch (error) {
+            console.error('Failed to select file:', error);
+            alert(i18n.t('storage.file_selection_failed') || 'Failed to select file: ' + error.message);
+        }
+    }
+
+    // Create a new Drive file
+    async createDriveFile() {
+        try {
+            const fileName = prompt(i18n.t('storage.enter_filename') || 
+                'Enter file name:', 'gift-cards.json');
+            
+            if (!fileName) return;
+            
+            const driveBackend = this.storageManager.getBackends()['google-drive'];
+            await driveBackend.createFile(fileName);
+            
+            // Save current cards to new file
+            await this.saveCards();
+            
+            // Update UI
+            await this.updateStorageStatusUI();
+            
+            alert(i18n.t('storage.file_created') || 'File created successfully');
+        } catch (error) {
+            console.error('Failed to create file:', error);
+            alert(i18n.t('storage.file_creation_failed') || 'Failed to create file: ' + error.message);
+        }
+    }
+
+    // Switch to local storage
+    async switchToLocalStorage() {
+        try {
+            if (!confirm(i18n.t('storage.switch_to_local_confirm') || 
+                'Switch to local storage? You can reconnect to Google Drive later.')) {
+                return;
+            }
+            
+            await this.storageManager.switchBackend('local');
+            
+            // Update UI
+            await this.updateStorageStatusUI();
+            
+            alert(i18n.t('storage.switched_to_local') || 'Switched to local storage');
+        } catch (error) {
+            console.error('Failed to switch to local storage:', error);
+            alert(i18n.t('storage.switch_failed') || 'Failed to switch storage: ' + error.message);
+        }
     }
 
     // Export all data to JSON file

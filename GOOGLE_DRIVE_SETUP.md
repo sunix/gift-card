@@ -1,0 +1,194 @@
+# Google Drive Backend Setup Guide
+
+This guide explains the Google Drive backend feature for the Gift Card Manager application.
+
+## Overview
+
+The Google Drive backend allows you to:
+- Store your gift cards in Google Drive instead of just local browser storage
+- Share cards with others by sharing the Google Drive file
+- Access your cards from multiple devices
+- Work offline with automatic sync when connectivity is restored
+- Track who made each transaction (owner tracking)
+
+## For End Users: Works Out-of-the-Box! 🎉
+
+**Good news:** The application comes with a default OAuth 2.0 Client ID configured, so you can start using Google Drive sync immediately:
+
+1. Open the app and navigate to the **Storage** section
+2. Click **"Connect to Google Drive"**
+3. Sign in with your Google account
+4. Grant permissions when prompted
+5. Select or create a file in your Google Drive
+6. Done! Your cards will now sync to Google Drive
+
+No additional setup required!
+
+## For Developers: Using Your Own Credentials
+
+If you've cloned this repository and want to use your own Google Cloud credentials instead of the default ones:
+
+### Prerequisites
+
+To use your own Google Drive backend credentials, you need:
+1. A Google account
+2. Custom OAuth 2.0 Client ID from Google Cloud Console
+
+**Note:** API key is NOT required. The application uses OAuth 2.0 authentication which is sufficient for accessing Google Drive.
+
+### Setting Up Your Own OAuth 2.0 Client ID
+
+### Step 1: Create a Google Cloud Project
+
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
+2. Click "Select a project" → "New Project"
+3. Enter a project name (e.g., "Gift Card Manager")
+4. Click "Create"
+
+### Step 2: Enable Google Drive API
+
+1. In your project, go to "APIs & Services" → "Library"
+2. Search for "Google Drive API"
+3. Click on it and click "Enable"
+4. Also enable "Google Picker API" for file selection
+
+### Step 3: Create OAuth 2.0 Client ID
+
+1. Go to "APIs & Services" → "Credentials"
+2. Click "Create Credentials" → "OAuth client ID"
+3. If prompted, configure the OAuth consent screen first:
+   - Choose "External" user type
+   - Fill in app name: "Gift Card Manager"
+   - Add your email as support email
+   - Add scopes: 
+     - `https://www.googleapis.com/auth/drive.file`
+     - `https://www.googleapis.com/auth/userinfo.profile`
+     - `https://www.googleapis.com/auth/userinfo.email`
+   - Add test users if needed
+4. For Application type, select "Web application"
+5. Add Authorized JavaScript origins:
+   - For local testing: `http://localhost:8000` (or your port)
+   - For GitHub Pages: `https://yourusername.github.io`
+6. **Authorized redirect URIs**: Leave this field empty (not required for Google Identity Services)
+7. Click "Create" and copy the Client ID
+
+**Note:** This application uses Google Identity Services (GIS), the modern authentication library recommended by Google. The deprecated `gapi.auth2` library is no longer supported for new applications. GIS does not require redirect URIs or API keys.
+
+### Step 4: Configure Your Custom Client ID in the Application
+
+**Important:** Your Client ID is safe to use in public PWAs and can be stored in the browser.
+
+1. Open the Gift Card Manager application
+2. Navigate to the "Storage" section (☁️ Storage in the navigation menu)
+3. In the "OAuth 2.0 Client ID" section:
+   - Enter your **custom Client ID** (from Step 3)
+4. Click **"Save Custom Client ID"**
+5. Your custom Client ID will now override the default one
+6. Click "Connect to Google Drive" to use your custom credentials
+
+**Switching Back to Default:** 
+- To revert to the default Client ID, simply clear your browser's localStorage for the app, or leave the Client ID field empty when saving
+
+**Security Note:** Your Client ID:
+- Is meant to be public (it's used in client-side applications)
+- Is stored in your browser's localStorage for convenience
+- Is safe to use in a public GitHub Pages deployment
+- OAuth provides the actual security through user consent and access tokens
+
+## Using the Google Drive Backend
+
+### Connecting to Google Drive (Using Default Credentials)
+
+1. Open the Gift Card Manager application
+2. Navigate to the "Storage" section (☁️ Storage in the navigation menu)
+3. The app comes with a default Client ID - no configuration needed!
+4. Click "Connect to Google Drive"
+5. Sign in with your Google account when prompted
+6. Grant permissions for the app to access Drive files it creates
+7. Choose to either:
+   - Select an existing file (if you've used the feature before)
+   - Create a new file (recommended for first-time use)
+
+### Working Offline
+
+The Google Drive backend automatically handles offline scenarios:
+
+- **When you go offline**: Changes are queued locally
+- **When you come back online**: Changes are automatically synced to Google Drive
+- **Status indicators**:
+  - 💾 = Local storage
+  - ☁️ = Google Drive connected and online
+  - 📴 = Google Drive but currently offline
+  - 🔄 = Syncing changes
+
+### Managing Files
+
+Once connected, you can:
+
+- **Select Drive File**: Choose a different file in your Drive
+- **Create New File**: Create a fresh file for your cards
+- **Switch to Local Storage**: Temporarily use local storage without disconnecting
+- **Disconnect**: Sign out from Google and switch back to local storage
+
+### Owner Tracking
+
+When using Google Drive backend:
+- Each transaction automatically records who made it
+- The owner's email is stored with the transaction
+- View transaction owners in the transaction history
+
+## Troubleshooting
+
+### "Failed to connect to Google Drive"
+
+- Check that you've enabled the required APIs in Google Cloud Console
+- Check your Client ID is configured correctly in the Storage settings
+- Verify your Client ID in Google Cloud Console
+- Make sure your domain is authorized in the OAuth 2.0 client settings
+
+### "Client ID not configured"
+
+- Go to the Storage section in the app
+- Enter your Client ID from Google Cloud Console
+- Click "Save Client ID"
+
+### "File selection cancelled"
+
+- This is normal if you clicked "Cancel" in the file picker
+- Click "Connect to Google Drive" again to try selecting a file
+
+### Offline sync not working
+
+- The app needs to have been online at least once after connecting
+- Check browser console for any errors
+- Ensure you're using a modern browser that supports Service Workers
+
+### Data not syncing
+
+- Check your internet connection
+- Look for the sync status icon (🔄 means syncing is in progress)
+- Try disconnecting and reconnecting to Google Drive
+
+## Security Considerations
+
+- **Your Client ID is meant to be public** - it's designed for use in client-side applications
+- OAuth 2.0 provides security through user consent and access tokens
+- The app only accesses files it creates (using `drive.file` scope)
+- Your OAuth access tokens are stored securely in your browser
+- No data is sent to any third-party servers besides Google Drive
+- You can revoke app access anytime from your Google Account settings
+- **Safe for public repositories:** Since the Client ID is public by design and OAuth provides the security, this approach is recommended by Google for public PWAs
+
+## Privacy
+
+- Cards stored in Google Drive are subject to Google's privacy policy
+- Cards can be shared with others by sharing the Google Drive file
+- Transaction owners are tracked by email address when using Google Drive
+
+## Alternative: Local Storage Only
+
+If you prefer not to use Google Drive:
+- Simply don't connect to Google Drive
+- Your cards will be stored locally in your browser
+- No account or setup required
+- Export/import features still available for backups
