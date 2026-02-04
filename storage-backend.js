@@ -236,35 +236,32 @@ class GoogleDriveBackend extends StorageBackend {
         }
     }
 
-    // Get API credentials from localStorage
-    getAPICredentials() {
+    // Get Client ID from localStorage
+    getClientId() {
         try {
-            const creds = localStorage.getItem('googleAPICredentials');
-            if (creds) {
-                return JSON.parse(creds);
+            const clientId = localStorage.getItem('googleClientId');
+            if (clientId) {
+                return clientId;
             }
         } catch (error) {
-            console.warn('Unable to load API credentials:', error);
+            console.warn('Unable to load Client ID:', error);
         }
         return null;
     }
 
-    // Save API credentials to localStorage
-    saveAPICredentials(apiKey, clientId) {
+    // Save Client ID to localStorage
+    saveClientId(clientId) {
         try {
-            localStorage.setItem('googleAPICredentials', JSON.stringify({
-                apiKey,
-                clientId
-            }));
+            localStorage.setItem('googleClientId', JSON.stringify(clientId));
         } catch (error) {
-            console.error('Unable to save API credentials:', error);
+            console.error('Unable to save Client ID:', error);
         }
     }
 
-    // Check if API credentials are configured
-    hasAPICredentials() {
-        const creds = this.getAPICredentials();
-        return creds && creds.apiKey && creds.clientId;
+    // Check if Client ID is configured
+    hasClientId() {
+        const clientId = this.getClientId();
+        return clientId && clientId.length > 0;
     }
 
     // Initialize Google API
@@ -275,21 +272,20 @@ class GoogleDriveBackend extends StorageBackend {
                 return;
             }
 
-            // Load credentials from localStorage
-            const credentials = this.getAPICredentials();
-            if (!credentials || !credentials.apiKey || !credentials.clientId) {
-                reject(new Error('API credentials not configured. Please configure them in the Storage section.'));
+            // Load Client ID from localStorage
+            const clientId = this.getClientId();
+            if (!clientId) {
+                reject(new Error('Client ID not configured. Please configure it in the Storage section.'));
                 return;
             }
 
-            // Store credentials for later use with GIS
-            this.apiKey = credentials.apiKey;
-            this.clientId = credentials.clientId;
+            // Store Client ID for later use with GIS
+            this.clientId = clientId;
 
             gapi.load('client:picker', async () => {
                 try {
+                    // Initialize without API key - OAuth is sufficient for Drive API access
                     await gapi.client.init({
-                        apiKey: credentials.apiKey,
                         discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
                     });
                     resolve();
@@ -461,7 +457,7 @@ class GoogleDriveBackend extends StorageBackend {
             const picker = new google.picker.PickerBuilder()
                 .addView(google.picker.ViewId.DOCS)
                 .setOAuthToken(this.accessToken)
-                .setDeveloperKey(this.apiKey)
+                // Developer key (API key) is optional - OAuth token is sufficient
                 .setCallback((data) => {
                     if (data.action === google.picker.Action.PICKED) {
                         const file = data.docs[0];

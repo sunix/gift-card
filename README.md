@@ -156,15 +156,15 @@ Want to share cards with family members or sync across devices? Connect to Googl
 
 ## Google Drive Setup
 
-To use the Google Drive backend feature, you need to set up API credentials from Google Cloud Console. This is completely optional - the app works great with just local storage.
+To use the Google Drive backend feature, you need to set up an OAuth 2.0 Client ID from Google Cloud Console. This is completely optional - the app works great with just local storage.
 
 **Quick Setup:**
 1. Create a project in [Google Cloud Console](https://console.cloud.google.com/)
 2. Enable Google Drive API and Google Picker API
-3. Create an API Key and OAuth 2.0 Client ID
-4. Enter the credentials in the app's Storage settings (they're stored in your browser only)
+3. Create an OAuth 2.0 Client ID (API Key NOT required)
+4. Enter the Client ID in the app's Storage settings (it's stored in your browser only)
 
-**Important:** Your API credentials are configured via the UI and stored in localStorage, NOT in the source code. This makes it safe for public repositories and GitHub Pages deployment.
+**Important:** Your Client ID is safe to use in public PWAs and is meant to be public. OAuth 2.0 provides the actual security through user consent and access tokens. This approach is recommended by Google for public applications.
 
 For detailed step-by-step instructions, see [Google Drive Setup Guide](GOOGLE_DRIVE_SETUP.md).
 

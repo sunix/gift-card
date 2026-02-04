@@ -15,9 +15,11 @@ The Google Drive backend allows you to:
 
 To use the Google Drive backend, you need:
 1. A Google account
-2. API credentials (API Key and Client ID) from Google Cloud Console
+2. OAuth 2.0 Client ID from Google Cloud Console
 
-## Setting Up Google API Credentials
+**Note:** API key is NOT required. The application uses OAuth 2.0 authentication which is sufficient for accessing Google Drive.
+
+## Setting Up OAuth 2.0 Client ID
 
 ### Step 1: Create a Google Cloud Project
 
@@ -33,17 +35,7 @@ To use the Google Drive backend, you need:
 3. Click on it and click "Enable"
 4. Also enable "Google Picker API" for file selection
 
-### Step 3: Create API Key
-
-1. Go to "APIs & Services" → "Credentials"
-2. Click "Create Credentials" → "API key"
-3. Copy the API key
-4. (Optional) Click "Restrict Key" to add restrictions:
-   - Application restrictions: HTTP referrers
-   - Add your website URL (e.g., `https://yourusername.github.io/*`)
-   - API restrictions: Select "Google Drive API" and "Google Picker API"
-
-### Step 4: Create OAuth 2.0 Client ID
+### Step 3: Create OAuth 2.0 Client ID
 
 1. Go to "APIs & Services" → "Credentials"
 2. Click "Create Credentials" → "OAuth client ID"
@@ -63,25 +55,24 @@ To use the Google Drive backend, you need:
 6. **Authorized redirect URIs**: Leave this field empty (not required for Google Identity Services)
 7. Click "Create" and copy the Client ID
 
-**Note:** This application uses Google Identity Services (GIS), the modern authentication library recommended by Google. The deprecated `gapi.auth2` library is no longer supported for new applications. GIS does not require redirect URIs.
+**Note:** This application uses Google Identity Services (GIS), the modern authentication library recommended by Google. The deprecated `gapi.auth2` library is no longer supported for new applications. GIS does not require redirect URIs or API keys.
 
-### Step 5: Configure Your Credentials in the Application
+### Step 4: Configure Your Client ID in the Application
 
-**Important:** Do NOT commit your credentials to the repository. The application stores them securely in your browser's localStorage.
+**Important:** Your Client ID is safe to use in public PWAs and can be stored in the browser.
 
 1. Open the Gift Card Manager application
 2. Navigate to the "Storage" section (☁️ Storage in the navigation menu)
-3. In the "Google API Configuration" section:
-   - Paste your **API Key** (from Step 3)
-   - Paste your **Client ID** (from Step 4)
-4. Click **"Save Credentials"**
-5. Your credentials are now stored locally in your browser only
+3. In the "OAuth 2.0 Client ID" section:
+   - Paste your **Client ID** (from Step 3)
+4. Click **"Save Client ID"**
+5. Your Client ID is now stored locally in your browser
 
-**Security Note:** Your credentials are:
-- Stored in your browser's localStorage only
-- Never sent to any server (except Google's API servers)
-- Safe to use in a client-side application (this is Google's intended use case)
-- NOT stored in the code or repository
+**Security Note:** Your Client ID:
+- Is meant to be public (it's used in client-side applications)
+- Is stored in your browser's localStorage for convenience
+- Is safe to use in a public GitHub Pages deployment
+- OAuth provides the actual security through user consent and access tokens
 
 ## Using the Google Drive Backend
 
@@ -89,7 +80,7 @@ To use the Google Drive backend, you need:
 
 1. Open the Gift Card Manager application
 2. Navigate to the "Storage" section (☁️ Storage in the navigation menu)
-3. Configure your API credentials (see Step 5 above) if not already done
+3. Configure your Client ID (see Step 4 above) if not already done
 4. Click "Connect to Google Drive"
 5. Sign in with your Google account when prompted
 6. Grant permissions for the app to access Drive files it creates
@@ -130,15 +121,15 @@ When using Google Drive backend:
 ### "Failed to connect to Google Drive"
 
 - Check that you've enabled the required APIs in Google Cloud Console
-- Check your API credentials are configured correctly in the Storage settings
-- Verify your API key and Client ID in Google Cloud Console
+- Check your Client ID is configured correctly in the Storage settings
+- Verify your Client ID in Google Cloud Console
 - Make sure your domain is authorized in the OAuth 2.0 client settings
 
-### "API credentials not configured"
+### "Client ID not configured"
 
 - Go to the Storage section in the app
-- Enter your API Key and Client ID from Google Cloud Console
-- Click "Save Credentials"
+- Enter your Client ID from Google Cloud Console
+- Click "Save Client ID"
 
 ### "File selection cancelled"
 
@@ -159,12 +150,13 @@ When using Google Drive backend:
 
 ## Security Considerations
 
-- **Your API credentials are stored locally in your browser only** - they are never sent anywhere except to Google's API servers
+- **Your Client ID is meant to be public** - it's designed for use in client-side applications
+- OAuth 2.0 provides security through user consent and access tokens
 - The app only accesses files it creates (using `drive.file` scope)
-- Your Google Drive credentials are stored securely in your browser
+- Your OAuth access tokens are stored securely in your browser
 - No data is sent to any third-party servers besides Google Drive
 - You can revoke app access anytime from your Google Account settings
-- **Safe for public repositories:** Since credentials are configured via UI and stored in localStorage, there's no risk of exposing them in source code
+- **Safe for public repositories:** Since the Client ID is public by design and OAuth provides the security, this approach is recommended by Google for public PWAs
 
 ## Privacy
 
