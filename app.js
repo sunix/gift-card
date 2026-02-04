@@ -208,6 +208,41 @@ class GiftCardManager {
                 this.renderArchivedCards();
             }
         });
+        
+        // Listen for Google Drive file changes (from polling)
+        window.addEventListener('driveFileChanged', async (e) => {
+            console.log('Drive file changed, reloading cards...', e.detail);
+            try {
+                // Reload cards from Drive
+                await this.loadCardsAsync();
+                // Re-render UI
+                this.renderCards();
+                // Re-render archived cards if visible
+                const archivedSection = document.getElementById('archivedCardsSection');
+                if (archivedSection && archivedSection.style.display !== 'none') {
+                    this.renderArchivedCards();
+                }
+                // Update modal if open
+                const modal = document.getElementById('cardDetailModal');
+                if (modal && modal.style.display === 'block') {
+                    const cardId = modal.dataset.cardId;
+                    if (cardId) {
+                        const card = this.cards.find(c => c.id === cardId);
+                        if (card) {
+                            this.openCardModal(card);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to reload cards after Drive change:', error);
+            }
+        });
+        
+        // Start polling if already connected to Google Drive
+        const driveBackend = this.storageManager.getBackends()['google-drive'];
+        if (driveBackend && await driveBackend.isAvailable()) {
+            driveBackend.startPolling().catch(err => console.error('Failed to start polling:', err));
+        }
     }
     
     // Handle navigation based on URL hash

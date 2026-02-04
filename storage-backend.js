@@ -104,6 +104,9 @@ class GoogleDriveBackend extends StorageBackend {
         this.lastSyncTime = null;
         this.offlineQueue = [];
         this.isOnline = navigator.onLine;
+        this.changeToken = null; // For Google Drive Changes API
+        this.pollingInterval = null; // For polling timer
+        this.pollingIntervalMs = 15000; // Default: 15 seconds
         this.loadConfig();
         this.setupOfflineHandlers();
     }
@@ -132,6 +135,7 @@ class GoogleDriveBackend extends StorageBackend {
                 this.fileId = parsed.fileId;
                 this.userInfo = parsed.userInfo;
                 this.lastSyncTime = parsed.lastSyncTime;
+                this.changeToken = parsed.changeToken;
             }
             
             // Load offline queue
@@ -151,7 +155,8 @@ class GoogleDriveBackend extends StorageBackend {
                 accessToken: this.accessToken,
                 fileId: this.fileId,
                 userInfo: this.userInfo,
-                lastSyncTime: this.lastSyncTime
+                lastSyncTime: this.lastSyncTime,
+                changeToken: this.changeToken
             };
             localStorage.setItem('googleDriveConfig', JSON.stringify(config));
             
@@ -169,6 +174,8 @@ class GoogleDriveBackend extends StorageBackend {
         this.userInfo = null;
         this.lastSyncTime = null;
         this.offlineQueue = [];
+        this.changeToken = null;
+        this.stopPolling(); // Stop polling when disconnecting
         try {
             localStorage.removeItem('googleDriveConfig');
             localStorage.removeItem('googleDriveOfflineQueue');
@@ -482,6 +489,8 @@ class GoogleDriveBackend extends StorageBackend {
                         const file = data.docs[0];
                         this.fileId = file.id;
                         this.saveConfig();
+                        // Start polling for changes after file selection
+                        this.startPolling().catch(err => console.error('Failed to start polling:', err));
                         resolve(file);
                     } else if (data.action === google.picker.Action.CANCEL) {
                         reject(new Error('File selection cancelled'));
@@ -523,6 +532,9 @@ class GoogleDriveBackend extends StorageBackend {
 
             // Initialize with empty cards array
             await this.saveCards([]);
+
+            // Start polling for changes after file creation
+            this.startPolling().catch(err => console.error('Failed to start polling:', err));
 
             return file;
         } catch (error) {
@@ -770,6 +782,145 @@ class GoogleDriveBackend extends StorageBackend {
             this.queueOfflineOperation('save', cards);
             // Don't throw - allow local operations to continue
             return cards;
+        }
+    }
+
+    // Google Drive Changes API Methods
+    
+    // Get the start page token for the Changes API
+    async getStartPageToken() {
+        if (!this.accessToken) {
+            throw new Error('Not connected to Google Drive');
+        }
+
+        try {
+            const response = await fetch(
+                'https://www.googleapis.com/drive/v3/changes/startPageToken',
+                {
+                    headers: {
+                        'Authorization': `Bearer ${this.accessToken}`
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`Failed to get start page token: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data.startPageToken;
+        } catch (error) {
+            console.error('Failed to get start page token:', error);
+            throw error;
+        }
+    }
+
+    // Check for changes since the last check
+    async checkForChanges() {
+        if (!this.accessToken || !this.changeToken || !this.fileId) {
+            return null;
+        }
+
+        try {
+            const response = await fetch(
+                `https://www.googleapis.com/drive/v3/changes?pageToken=${this.changeToken}&fields=changes(fileId,removed,file(id,modifiedTime)),newStartPageToken`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${this.accessToken}`
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                // Token might be invalid, get a new start token
+                if (response.status === 400) {
+                    console.log('Change token invalid, getting new start token');
+                    this.changeToken = await this.getStartPageToken();
+                    this.saveConfig();
+                    return null;
+                }
+                throw new Error(`Failed to check for changes: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            // Update the change token for next poll
+            if (data.newStartPageToken) {
+                this.changeToken = data.newStartPageToken;
+                this.saveConfig();
+            }
+
+            // Check if our file was changed
+            if (data.changes && data.changes.length > 0) {
+                for (const change of data.changes) {
+                    if (change.fileId === this.fileId && !change.removed) {
+                        return {
+                            fileChanged: true,
+                            modifiedTime: change.file?.modifiedTime
+                        };
+                    }
+                }
+            }
+
+            return { fileChanged: false };
+        } catch (error) {
+            console.error('Failed to check for changes:', error);
+            return null;
+        }
+    }
+
+    // Start polling for changes
+    async startPolling() {
+        // Stop any existing polling
+        this.stopPolling();
+
+        // Get initial change token if we don't have one
+        if (!this.changeToken) {
+            try {
+                this.changeToken = await this.getStartPageToken();
+                this.saveConfig();
+            } catch (error) {
+                console.error('Failed to initialize polling:', error);
+                return;
+            }
+        }
+
+        // Start polling
+        console.log('Starting Google Drive change polling (every', this.pollingIntervalMs / 1000, 'seconds)');
+        this.pollingInterval = setInterval(async () => {
+            if (!this.isOnline || !this.accessToken) {
+                return;
+            }
+
+            const result = await this.checkForChanges();
+            if (result && result.fileChanged) {
+                console.log('Google Drive file changed, reloading cards...');
+                // Dispatch event to notify the application
+                window.dispatchEvent(new CustomEvent('driveFileChanged', {
+                    detail: {
+                        fileId: this.fileId,
+                        modifiedTime: result.modifiedTime
+                    }
+                }));
+            }
+        }, this.pollingIntervalMs);
+    }
+
+    // Stop polling for changes
+    stopPolling() {
+        if (this.pollingInterval) {
+            clearInterval(this.pollingInterval);
+            this.pollingInterval = null;
+            console.log('Stopped Google Drive change polling');
+        }
+    }
+
+    // Update polling interval
+    setPollingInterval(milliseconds) {
+        this.pollingIntervalMs = milliseconds;
+        // Restart polling with new interval if it's running
+        if (this.pollingInterval) {
+            this.startPolling();
         }
     }
 
