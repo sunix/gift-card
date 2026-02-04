@@ -282,7 +282,9 @@ class GoogleDriveBackend extends StorageBackend {
 
             gapi.load('client:picker', async () => {
                 try {
-                    // Initialize without API key - OAuth is sufficient for Drive API access
+                    // Initialize without API key - OAuth token is sufficient for Drive API
+                    // Per Google's documentation, API keys are optional when using OAuth 2.0
+                    // See: https://developers.google.com/drive/api/guides/api-specific-auth
                     await gapi.client.init({
                         discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
                     });
@@ -455,7 +457,9 @@ class GoogleDriveBackend extends StorageBackend {
             const picker = new google.picker.PickerBuilder()
                 .addView(google.picker.ViewId.DOCS)
                 .setOAuthToken(this.accessToken)
-                // Developer key (API key) is optional - OAuth token is sufficient
+                // Developer key (API key) is optional when using OAuth token
+                // Per Google Picker API docs, setDeveloperKey() can be omitted when OAuth is used
+                // See: https://developers.google.com/picker/docs/reference
                 .setCallback((data) => {
                     if (data.action === google.picker.Action.PICKED) {
                         const file = data.docs[0];
