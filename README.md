@@ -156,13 +156,18 @@ Want to share cards with family members or sync across devices? Connect to Googl
 
 ## Google Drive Setup
 
-To use the Google Drive backend feature, you need to set up an OAuth 2.0 Client ID from Google Cloud Console. This is completely optional - the app works great with just local storage.
+**Good News: Works Out-of-the-Box!** 
 
-**Quick Setup:**
+The app comes with a default OAuth 2.0 Client ID, so you can use Google Drive sync immediately without any setup. Just click "Connect to Google Drive" in the Storage section.
+
+**For Developers:**
+
+If you clone this repository and want to use your own Google Cloud credentials:
+
 1. Create a project in [Google Cloud Console](https://console.cloud.google.com/)
 2. Enable Google Drive API and Google Picker API
 3. Create an OAuth 2.0 Client ID (API Key NOT required)
-4. Enter the Client ID in the app's Storage settings (it's stored in your browser only)
+4. Enter your custom Client ID in the app's Storage settings
 
 **Important:** Your Client ID is safe to use in public PWAs and is meant to be public. OAuth 2.0 provides the actual security through user consent and access tokens. This approach is recommended by Google for public applications.
 

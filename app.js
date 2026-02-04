@@ -905,17 +905,21 @@ class GiftCardManager {
     updateAPICredentialsUI() {
         const driveBackend = this.storageManager.getBackends()['google-drive'];
         const clientId = driveBackend.getClientId();
+        const isUsingDefault = driveBackend.isUsingDefaultClientId();
         const statusDiv = document.getElementById('apiConfigStatus');
         const clientIdInput = document.getElementById('clientIdInput');
 
-        if (clientId) {
-            statusDiv.innerHTML = '✅ <span data-i18n="storage.client_id_configured">Client ID is configured</span>';
+        if (isUsingDefault) {
+            // Using default Client ID
+            statusDiv.innerHTML = '✅ <span data-i18n="storage.client_id_using_default">Using default Client ID (works out-of-the-box). Developers can enter a custom Client ID below if needed.</span>';
+            statusDiv.style.color = '#155724';
+            clientIdInput.placeholder = clientId.substring(0, 12) + '... (default)';
+        } else {
+            // Using custom Client ID
+            statusDiv.innerHTML = '✅ <span data-i18n="storage.client_id_custom_configured">Using custom Client ID</span>';
             statusDiv.style.color = '#155724';
             // Show masked value
-            clientIdInput.placeholder = clientId.substring(0, 12) + '...';
-        } else {
-            statusDiv.innerHTML = '⚠️ <span data-i18n="storage.client_id_not_configured">Client ID not configured. Please enter your OAuth 2.0 Client ID below.</span>';
-            statusDiv.style.color = '#856404';
+            clientIdInput.placeholder = clientId.substring(0, 12) + '... (custom)';
         }
     }
 

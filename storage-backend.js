@@ -4,6 +4,12 @@
 // Application version (matches package.json)
 const APP_VERSION = '2.1.0';
 
+// Default OAuth 2.0 Client ID for the public instance
+// This allows the app to work out-of-the-box for end users
+// Developers can override this by entering a custom Client ID in the Storage settings
+// See GOOGLE_DRIVE_SETUP.md for instructions on creating your own Client ID
+const DEFAULT_GOOGLE_CLIENT_ID = '826069883489-67qs4di2tuldf3pbgsml6l4fq91dee2a.apps.googleusercontent.com';
+
 // Base Storage Backend Interface
 class StorageBackend {
     constructor() {
@@ -236,15 +242,26 @@ class GoogleDriveBackend extends StorageBackend {
         }
     }
 
-    // Get Client ID from localStorage
+    // Get Client ID from localStorage or use default
     getClientId() {
         try {
             const clientId = localStorage.getItem('googleClientId');
-            return clientId;
+            // Return custom Client ID if saved, otherwise use default
+            return clientId || DEFAULT_GOOGLE_CLIENT_ID;
         } catch (error) {
-            console.warn('Unable to load Client ID:', error);
+            console.warn('Unable to load Client ID, using default:', error);
+            return DEFAULT_GOOGLE_CLIENT_ID;
         }
-        return null;
+    }
+    
+    // Check if using default Client ID
+    isUsingDefaultClientId() {
+        try {
+            const clientId = localStorage.getItem('googleClientId');
+            return !clientId; // True if no custom Client ID is saved
+        } catch (error) {
+            return true; // If can't access localStorage, assume default
+        }
     }
 
     // Save Client ID to localStorage

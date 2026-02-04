@@ -1,6 +1,6 @@
 # Google Drive Backend Setup Guide
 
-This guide explains how to set up the Google Drive backend feature for the Gift Card Manager application.
+This guide explains the Google Drive backend feature for the Gift Card Manager application.
 
 ## Overview
 
@@ -11,15 +11,32 @@ The Google Drive backend allows you to:
 - Work offline with automatic sync when connectivity is restored
 - Track who made each transaction (owner tracking)
 
-## Prerequisites
+## For End Users: Works Out-of-the-Box! 🎉
 
-To use the Google Drive backend, you need:
+**Good news:** The application comes with a default OAuth 2.0 Client ID configured, so you can start using Google Drive sync immediately:
+
+1. Open the app and navigate to the **Storage** section
+2. Click **"Connect to Google Drive"**
+3. Sign in with your Google account
+4. Grant permissions when prompted
+5. Select or create a file in your Google Drive
+6. Done! Your cards will now sync to Google Drive
+
+No additional setup required!
+
+## For Developers: Using Your Own Credentials
+
+If you've cloned this repository and want to use your own Google Cloud credentials instead of the default ones:
+
+### Prerequisites
+
+To use your own Google Drive backend credentials, you need:
 1. A Google account
-2. OAuth 2.0 Client ID from Google Cloud Console
+2. Custom OAuth 2.0 Client ID from Google Cloud Console
 
 **Note:** API key is NOT required. The application uses OAuth 2.0 authentication which is sufficient for accessing Google Drive.
 
-## Setting Up OAuth 2.0 Client ID
+### Setting Up Your Own OAuth 2.0 Client ID
 
 ### Step 1: Create a Google Cloud Project
 
@@ -57,16 +74,20 @@ To use the Google Drive backend, you need:
 
 **Note:** This application uses Google Identity Services (GIS), the modern authentication library recommended by Google. The deprecated `gapi.auth2` library is no longer supported for new applications. GIS does not require redirect URIs or API keys.
 
-### Step 4: Configure Your Client ID in the Application
+### Step 4: Configure Your Custom Client ID in the Application
 
 **Important:** Your Client ID is safe to use in public PWAs and can be stored in the browser.
 
 1. Open the Gift Card Manager application
 2. Navigate to the "Storage" section (☁️ Storage in the navigation menu)
 3. In the "OAuth 2.0 Client ID" section:
-   - Paste your **Client ID** (from Step 3)
-4. Click **"Save Client ID"**
-5. Your Client ID is now stored locally in your browser
+   - Enter your **custom Client ID** (from Step 3)
+4. Click **"Save Custom Client ID"**
+5. Your custom Client ID will now override the default one
+6. Click "Connect to Google Drive" to use your custom credentials
+
+**Switching Back to Default:** 
+- To revert to the default Client ID, simply clear your browser's localStorage for the app, or leave the Client ID field empty when saving
 
 **Security Note:** Your Client ID:
 - Is meant to be public (it's used in client-side applications)
@@ -76,11 +97,11 @@ To use the Google Drive backend, you need:
 
 ## Using the Google Drive Backend
 
-### Connecting to Google Drive
+### Connecting to Google Drive (Using Default Credentials)
 
 1. Open the Gift Card Manager application
 2. Navigate to the "Storage" section (☁️ Storage in the navigation menu)
-3. Configure your Client ID (see Step 4 above) if not already done
+3. The app comes with a default Client ID - no configuration needed!
 4. Click "Connect to Google Drive"
 5. Sign in with your Google account when prompted
 6. Grant permissions for the app to access Drive files it creates
