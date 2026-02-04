@@ -240,9 +240,7 @@ class GoogleDriveBackend extends StorageBackend {
     getClientId() {
         try {
             const clientId = localStorage.getItem('googleClientId');
-            if (clientId) {
-                return clientId;
-            }
+            return clientId;
         } catch (error) {
             console.warn('Unable to load Client ID:', error);
         }
@@ -252,7 +250,7 @@ class GoogleDriveBackend extends StorageBackend {
     // Save Client ID to localStorage
     saveClientId(clientId) {
         try {
-            localStorage.setItem('googleClientId', JSON.stringify(clientId));
+            localStorage.setItem('googleClientId', clientId);
         } catch (error) {
             console.error('Unable to save Client ID:', error);
         }
