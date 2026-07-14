@@ -389,14 +389,14 @@ class GiftCardManager {
             return this.preferredBarcodeDetectorFormats;
         }
 
-        const barcodeDetectorConstructor = typeof BarcodeDetector === 'undefined' ? null : BarcodeDetector;
-        if (!barcodeDetectorConstructor?.getSupportedFormats) {
+        const BarcodeDetectorClass = typeof BarcodeDetector === 'undefined' ? null : BarcodeDetector;
+        if (!BarcodeDetectorClass?.getSupportedFormats) {
             this.preferredBarcodeDetectorFormats = preferredFormats;
             return this.preferredBarcodeDetectorFormats;
         }
 
         try {
-            const supportedFormats = await barcodeDetectorConstructor.getSupportedFormats();
+            const supportedFormats = await BarcodeDetectorClass.getSupportedFormats();
             const matchedFormats = preferredFormats.filter(format => supportedFormats.includes(format));
             this.preferredBarcodeDetectorFormats = matchedFormats.length > 0 ? matchedFormats : preferredFormats;
         } catch (error) {
@@ -553,6 +553,7 @@ class GiftCardManager {
 
                     if (detectedBarcode) {
                         this.applyDetectedBarcode(detectedBarcode.rawValue, detectedBarcode.format);
+                        this.isScanningBarcodeFrame = false;
                         this.stopBarcodeCameraScan();
                         return;
                     }

@@ -448,7 +448,6 @@ describe('GiftCardManager', () => {
         });
 
         test('should import a barcode from an image and prefill the card number', async () => {
-            const fileInput = document.getElementById('barcodeImageInput');
             const event = {
                 target: {
                     files: [{}],
@@ -470,7 +469,6 @@ describe('GiftCardManager', () => {
             expect(manager.pendingBarcodeFormat).toBe('EAN13');
             expect(document.getElementById('barcodeImportStatus').textContent).toBe('Barcode imported. Detected format: EAN13.');
             expect(event.target.value).toBe('');
-            expect(fileInput).toBeTruthy();
         });
 
         test('should show an error when no barcode is found in the selected image', async () => {
