@@ -12,6 +12,7 @@ class GiftCardManager {
         this.barcodeScannerStream = null;
         this.barcodeScannerFrameRequest = null;
         this.isScanningBarcodeFrame = false;
+        this.preferredBarcodeDetectorFormats = null;
     }
 
     // Get locale string for date formatting based on current language
@@ -200,7 +201,8 @@ class GiftCardManager {
         const cancelBarcodeScanBtn = document.getElementById('cancelBarcodeScanBtn');
         if (cancelBarcodeScanBtn) {
             cancelBarcodeScanBtn.addEventListener('click', () => {
-                this.stopBarcodeCameraScan(i18n.t('form.barcode_scan_cancelled'));
+                this.stopBarcodeCameraScan();
+                this.updateBarcodeImportStatus(i18n.t('form.barcode_scan_cancelled'), 'info');
             });
         }
 
@@ -383,19 +385,26 @@ class GiftCardManager {
 
     async getPreferredBarcodeDetectorFormats() {
         const preferredFormats = ['code_128', 'code_39', 'ean_13', 'ean_8', 'upc_a', 'itf', 'codabar'];
+        if (this.preferredBarcodeDetectorFormats) {
+            return this.preferredBarcodeDetectorFormats;
+        }
 
-        if (typeof BarcodeDetector === 'undefined' || typeof BarcodeDetector.getSupportedFormats !== 'function') {
-            return preferredFormats;
+        const barcodeDetectorConstructor = typeof BarcodeDetector === 'undefined' ? null : BarcodeDetector;
+        if (!barcodeDetectorConstructor?.getSupportedFormats) {
+            this.preferredBarcodeDetectorFormats = preferredFormats;
+            return this.preferredBarcodeDetectorFormats;
         }
 
         try {
-            const supportedFormats = await BarcodeDetector.getSupportedFormats();
+            const supportedFormats = await barcodeDetectorConstructor.getSupportedFormats();
             const matchedFormats = preferredFormats.filter(format => supportedFormats.includes(format));
-            return matchedFormats.length > 0 ? matchedFormats : preferredFormats;
+            this.preferredBarcodeDetectorFormats = matchedFormats.length > 0 ? matchedFormats : preferredFormats;
         } catch (error) {
             console.warn('Unable to retrieve supported barcode formats:', error);
-            return preferredFormats;
+            this.preferredBarcodeDetectorFormats = preferredFormats;
         }
+
+        return this.preferredBarcodeDetectorFormats;
     }
 
     mapDetectedBarcodeFormat(format) {
@@ -522,7 +531,9 @@ class GiftCardManager {
             this.scanBarcodeCameraFrame();
         } catch (error) {
             console.error('Unable to start barcode camera scan:', error);
-            this.stopBarcodeCameraScan(i18n.t('alert.barcode_camera_failed'), true);
+            this.stopBarcodeCameraScan();
+            this.updateBarcodeImportStatus(i18n.t('alert.barcode_camera_failed'), 'error');
+            alert(i18n.t('alert.barcode_camera_failed'));
         }
     }
 
@@ -556,7 +567,7 @@ class GiftCardManager {
         });
     }
 
-    stopBarcodeCameraScan(statusMessage = '', showAlert = false) {
+    stopBarcodeCameraScan() {
         if (this.barcodeScannerFrameRequest) {
             cancelAnimationFrame(this.barcodeScannerFrameRequest);
             this.barcodeScannerFrameRequest = null;
@@ -577,13 +588,6 @@ class GiftCardManager {
         const scannerVideo = document.getElementById('barcodeScannerVideo');
         if (scannerVideo) {
             scannerVideo.srcObject = null;
-        }
-
-        if (statusMessage) {
-            this.updateBarcodeImportStatus(statusMessage, showAlert ? 'error' : 'info');
-            if (showAlert) {
-                alert(statusMessage);
-            }
         }
     }
 
