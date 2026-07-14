@@ -389,14 +389,13 @@ class GiftCardManager {
             return this.preferredBarcodeDetectorFormats;
         }
 
-        const BarcodeDetectorClass = typeof BarcodeDetector === 'undefined' ? null : BarcodeDetector;
-        if (!BarcodeDetectorClass?.getSupportedFormats) {
+        if (typeof BarcodeDetector === 'undefined' || !BarcodeDetector.getSupportedFormats) {
             this.preferredBarcodeDetectorFormats = preferredFormats;
             return this.preferredBarcodeDetectorFormats;
         }
 
         try {
-            const supportedFormats = await BarcodeDetectorClass.getSupportedFormats();
+            const supportedFormats = await BarcodeDetector.getSupportedFormats();
             const matchedFormats = preferredFormats.filter(format => supportedFormats.includes(format));
             this.preferredBarcodeDetectorFormats = matchedFormats.length > 0 ? matchedFormats : preferredFormats;
         } catch (error) {
@@ -548,13 +547,16 @@ class GiftCardManager {
 
     scanBarcodeCameraFrame() {
         const scannerVideo = document.getElementById('barcodeScannerVideo');
+        const videoReadyStateThreshold = typeof HTMLMediaElement !== 'undefined'
+            ? HTMLMediaElement.HAVE_CURRENT_DATA
+            : 2;
 
         if (!this.barcodeScannerStream || !scannerVideo || this.isScanningBarcodeFrame) {
             return;
         }
 
         this.barcodeScannerFrameRequest = requestAnimationFrame(() => {
-            if (scannerVideo.readyState < 2) {
+            if (scannerVideo.readyState < videoReadyStateThreshold) {
                 this.scanBarcodeCameraFrame();
                 return;
             }

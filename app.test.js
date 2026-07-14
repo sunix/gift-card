@@ -425,15 +425,16 @@ describe('GiftCardManager', () => {
         });
 
         test('should keep the detected barcode format when adding a scanned card', () => {
-            manager.pendingBarcodeFormat = 'EAN13';
+            manager.applyDetectedBarcode('1234567890123', 'ean_13');
             manager.mockInput = {
-                cardNumber: '1234567890123',
+                cardNumber: document.getElementById('cardNumber').value,
                 cardName: 'Scanned Card',
                 initialBalance: '40'
             };
 
             const card = manager.addCard();
 
+            expect(document.getElementById('cardNumber').value).toBe('1234567890123');
             expect(card.barcodeFormat).toBe('EAN13');
             expect(manager.pendingBarcodeFormat).toBeNull();
         });
