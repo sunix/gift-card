@@ -284,6 +284,19 @@
                     <div class="form-group">
                         <label for="cardNumber" data-i18n="form.card_number">Card Number:</label>
                         <input type="text" id="cardNumber" required data-i18n-placeholder="form.card_number_placeholder" placeholder="e.g., 1234567890">
+                        <div class="barcode-import-tools">
+                            <p class="barcode-import-help" data-i18n="form.barcode_import_help">Import a barcode with your camera or a picture.</p>
+                            <div class="barcode-import-buttons">
+                                <button type="button" id="scanBarcodeCameraBtn" class="btn btn-secondary btn-small" data-i18n="form.scan_barcode_camera">📷 Scan with Camera</button>
+                                <button type="button" id="importBarcodeImageBtn" class="btn btn-secondary btn-small" data-i18n="form.import_barcode_picture">🖼️ Import Picture</button>
+                            </div>
+                            <input type="file" id="barcodeImageInput" accept="image/*" style="display: none;">
+                            <div id="barcodeImportStatus" class="barcode-import-status" aria-live="polite"></div>
+                            <div id="barcodeScanner" class="barcode-scanner" style="display: none;">
+                                <video id="barcodeScannerVideo" playsinline muted></video>
+                                <button type="button" id="cancelBarcodeScanBtn" class="btn btn-secondary btn-small" data-i18n="form.barcode_scan_cancel">Cancel Scan</button>
+                            </div>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="cardName" data-i18n="form.card_name">Card Name:</label>

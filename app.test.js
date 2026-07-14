@@ -38,10 +38,18 @@ const i18nMock = {
             'alert.export_failed': 'Export failed',
             'alert.transaction_exceeds': 'Transaction exceeds balance',
             'alert.fidelity_no_transactions': 'Fidelity cards do not support transactions',
+            'alert.barcode_import_unsupported': 'Barcode import is not supported by this browser.',
+            'alert.barcode_camera_unsupported': 'Camera access is not available on this device or browser.',
+            'alert.barcode_camera_failed': 'Unable to start the camera for barcode scanning.',
+            'alert.barcode_not_found': 'No barcode was found in the selected picture.',
             'alert.reset_balance_prompt': 'Enter the new balance amount (default is initial balance of €{initial}):',
             'alert.reset_balance_invalid': 'Invalid amount. Please enter a valid positive number.',
             'alert.reset_balance_success': 'Balance reset to €{amount}',
-            'transaction.reset_description': 'Balance reset to €{amount}'
+            'transaction.reset_description': 'Balance reset to €{amount}',
+            'form.barcode_image_processing': 'Reading barcode from picture…',
+            'form.barcode_import_success': 'Barcode imported. Detected format: {format}.',
+            'form.barcode_scan_cancelled': 'Barcode scan cancelled.',
+            'form.barcode_camera_ready': 'Point your camera at the barcode.'
         };
         let msg = translations[key] || key;
         if (params) {
@@ -102,7 +110,7 @@ class GiftCardManager extends BaseGiftCardManager {
             name: cardName,
             initialBalance: initialBalance,
             currentBalance: initialBalance,
-            barcodeFormat: 'CODE128',
+            barcodeFormat: this.pendingBarcodeFormat || 'CODE128',
             transactions: isFidelityCard ? [] : [{
                 date: new Date().toISOString(),
                 amount: initialBalance,
@@ -124,6 +132,7 @@ class GiftCardManager extends BaseGiftCardManager {
 
         const alertKey = isFidelityCard ? 'alert.fidelity_added' : 'alert.gift_card_added';
         alert(i18n.t(alertKey, { name: cardName }));
+        this.pendingBarcodeFormat = null;
         
         return newCard;
     }
@@ -271,6 +280,14 @@ describe('GiftCardManager', () => {
         global.alert.mockClear();
         global.confirm.mockClear();
         global.prompt.mockClear();
+        document.body.innerHTML = `
+            <input id="cardNumber" />
+            <input id="cardName" />
+            <div id="barcodeImportStatus"></div>
+            <input id="barcodeImageInput" />
+            <div id="barcodeScanner"></div>
+            <video id="barcodeScannerVideo"></video>
+        `;
         // Create a new manager instance
         manager = new GiftCardManager();
     });
@@ -405,6 +422,73 @@ describe('GiftCardManager', () => {
             manager.cards.push(fidelityCard);
 
             expect(manager.isFidelityCard(fidelityCard)).toBe(true);
+        });
+
+        test('should keep the detected barcode format when adding a scanned card', () => {
+            manager.pendingBarcodeFormat = 'EAN13';
+            manager.mockInput = {
+                cardNumber: '1234567890123',
+                cardName: 'Scanned Card',
+                initialBalance: '40'
+            };
+
+            const card = manager.addCard();
+
+            expect(card.barcodeFormat).toBe('EAN13');
+            expect(manager.pendingBarcodeFormat).toBeNull();
+        });
+    });
+
+    describe('barcode import', () => {
+        test('should map detected barcode formats to app barcode formats', () => {
+            expect(manager.mapDetectedBarcodeFormat('code_128')).toBe('CODE128');
+            expect(manager.mapDetectedBarcodeFormat('ean_13')).toBe('EAN13');
+            expect(manager.mapDetectedBarcodeFormat('upc_a')).toBe('UPC');
+            expect(manager.mapDetectedBarcodeFormat('unknown')).toBe('CODE128');
+        });
+
+        test('should import a barcode from an image and prefill the card number', async () => {
+            const fileInput = document.getElementById('barcodeImageInput');
+            const event = {
+                target: {
+                    files: [{}],
+                    value: 'selected-file'
+                }
+            };
+
+            manager.loadImageFromFile = jest.fn().mockResolvedValue({ src: 'image' });
+            manager.detectBarcodeFromSource = jest.fn().mockResolvedValue({
+                rawValue: '3216549870123',
+                format: 'ean_13'
+            });
+
+            await manager.importBarcodeFromImage(event);
+
+            expect(manager.loadImageFromFile).toHaveBeenCalledWith(event.target.files[0]);
+            expect(manager.detectBarcodeFromSource).toHaveBeenCalled();
+            expect(document.getElementById('cardNumber').value).toBe('3216549870123');
+            expect(manager.pendingBarcodeFormat).toBe('EAN13');
+            expect(document.getElementById('barcodeImportStatus').textContent).toBe('Barcode imported. Detected format: EAN13.');
+            expect(event.target.value).toBe('');
+            expect(fileInput).toBeTruthy();
+        });
+
+        test('should show an error when no barcode is found in the selected image', async () => {
+            const event = {
+                target: {
+                    files: [{}],
+                    value: 'selected-file'
+                }
+            };
+
+            manager.loadImageFromFile = jest.fn().mockResolvedValue({ src: 'image' });
+            manager.detectBarcodeFromSource = jest.fn().mockResolvedValue(null);
+
+            await manager.importBarcodeFromImage(event);
+
+            expect(alert).toHaveBeenCalledWith('No barcode was found in the selected picture.');
+            expect(document.getElementById('barcodeImportStatus').textContent).toBe('No barcode was found in the selected picture.');
+            expect(event.target.value).toBe('');
         });
     });
 

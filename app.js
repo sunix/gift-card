@@ -8,6 +8,10 @@ class GiftCardManager {
         this.stores = [];
         this.draggedElement = null;
         this.draggedCardId = null;
+        this.pendingBarcodeFormat = null;
+        this.barcodeScannerStream = null;
+        this.barcodeScannerFrameRequest = null;
+        this.isScanningBarcodeFrame = false;
     }
 
     // Get locale string for date formatting based on current language
@@ -172,6 +176,34 @@ class GiftCardManager {
             this.importData(e);
         });
 
+        const scanBarcodeCameraBtn = document.getElementById('scanBarcodeCameraBtn');
+        if (scanBarcodeCameraBtn) {
+            scanBarcodeCameraBtn.addEventListener('click', () => {
+                this.startBarcodeCameraScan();
+            });
+        }
+
+        const importBarcodeImageBtn = document.getElementById('importBarcodeImageBtn');
+        if (importBarcodeImageBtn) {
+            importBarcodeImageBtn.addEventListener('click', () => {
+                document.getElementById('barcodeImageInput').click();
+            });
+        }
+
+        const barcodeImageInput = document.getElementById('barcodeImageInput');
+        if (barcodeImageInput) {
+            barcodeImageInput.addEventListener('change', (e) => {
+                this.importBarcodeFromImage(e);
+            });
+        }
+
+        const cancelBarcodeScanBtn = document.getElementById('cancelBarcodeScanBtn');
+        if (cancelBarcodeScanBtn) {
+            cancelBarcodeScanBtn.addEventListener('click', () => {
+                this.stopBarcodeCameraScan(i18n.t('form.barcode_scan_cancelled'));
+            });
+        }
+
         // Modal close button
         document.querySelector('.close').addEventListener('click', () => {
             this.closeModal();
@@ -304,7 +336,7 @@ class GiftCardManager {
             name: cardName,
             initialBalance: initialBalance,
             currentBalance: initialBalance,
-            barcodeFormat: 'CODE128', // Default barcode format
+            barcodeFormat: this.pendingBarcodeFormat || 'CODE128',
             transactions: isFidelityCard ? [] : [{
                 date: new Date().toISOString(),
                 amount: initialBalance,
@@ -327,10 +359,232 @@ class GiftCardManager {
 
         // Reset form
         document.getElementById('addCardForm').reset();
+        this.pendingBarcodeFormat = null;
+        this.updateBarcodeImportStatus('');
+        this.stopBarcodeCameraScan();
 
         // Show success message
         const alertKey = isFidelityCard ? 'alert.fidelity_added' : 'alert.gift_card_added';
         alert(i18n.t(alertKey, { name: cardName }));
+    }
+
+    updateBarcodeImportStatus(message, type = '') {
+        const status = document.getElementById('barcodeImportStatus');
+        if (!status) {
+            return;
+        }
+
+        status.textContent = message || '';
+        status.className = 'barcode-import-status';
+        if (type) {
+            status.classList.add(`barcode-import-status-${type}`);
+        }
+    }
+
+    async getPreferredBarcodeDetectorFormats() {
+        const preferredFormats = ['code_128', 'code_39', 'ean_13', 'ean_8', 'upc_a', 'itf', 'codabar'];
+
+        if (typeof BarcodeDetector === 'undefined' || typeof BarcodeDetector.getSupportedFormats !== 'function') {
+            return preferredFormats;
+        }
+
+        try {
+            const supportedFormats = await BarcodeDetector.getSupportedFormats();
+            const matchedFormats = preferredFormats.filter(format => supportedFormats.includes(format));
+            return matchedFormats.length > 0 ? matchedFormats : preferredFormats;
+        } catch (error) {
+            console.warn('Unable to retrieve supported barcode formats:', error);
+            return preferredFormats;
+        }
+    }
+
+    mapDetectedBarcodeFormat(format) {
+        const formatMap = {
+            'code_128': 'CODE128',
+            'code_39': 'CODE39',
+            'ean_13': 'EAN13',
+            'ean_8': 'EAN8',
+            'upc_a': 'UPC',
+            'itf': 'ITF14',
+            'codabar': 'CODABAR'
+        };
+
+        return formatMap[String(format || '').toLowerCase()] || 'CODE128';
+    }
+
+    applyDetectedBarcode(rawValue, format) {
+        const cardNumberInput = document.getElementById('cardNumber');
+        if (!cardNumberInput) {
+            return;
+        }
+
+        cardNumberInput.value = String(rawValue || '').trim();
+        this.pendingBarcodeFormat = this.mapDetectedBarcodeFormat(format);
+        this.updateBarcodeImportStatus(i18n.t('form.barcode_import_success', { format: this.pendingBarcodeFormat }), 'success');
+
+        const cardNameInput = document.getElementById('cardName');
+        if (cardNameInput && typeof cardNameInput.focus === 'function') {
+            cardNameInput.focus();
+        }
+    }
+
+    async detectBarcodeFromSource(source) {
+        if (typeof BarcodeDetector === 'undefined') {
+            throw new Error(i18n.t('alert.barcode_import_unsupported'));
+        }
+
+        const detector = new BarcodeDetector({
+            formats: await this.getPreferredBarcodeDetectorFormats()
+        });
+        const results = await detector.detect(source);
+        return results[0] || null;
+    }
+
+    async loadImageFromFile(file) {
+        return new Promise((resolve, reject) => {
+            const objectUrl = URL.createObjectURL(file);
+            const image = new Image();
+
+            image.onload = () => {
+                URL.revokeObjectURL(objectUrl);
+                resolve(image);
+            };
+
+            image.onerror = () => {
+                URL.revokeObjectURL(objectUrl);
+                reject(new Error(i18n.t('alert.import_read_failed')));
+            };
+
+            image.src = objectUrl;
+        });
+    }
+
+    async importBarcodeFromImage(event) {
+        const file = event.target.files?.[0];
+        if (!file) {
+            return;
+        }
+
+        this.updateBarcodeImportStatus(i18n.t('form.barcode_image_processing'), 'info');
+
+        try {
+            const image = await this.loadImageFromFile(file);
+            const detectedBarcode = await this.detectBarcodeFromSource(image);
+
+            if (!detectedBarcode) {
+                throw new Error(i18n.t('alert.barcode_not_found'));
+            }
+
+            this.applyDetectedBarcode(detectedBarcode.rawValue, detectedBarcode.format);
+        } catch (error) {
+            alert(error.message);
+            this.updateBarcodeImportStatus(error.message, 'error');
+        } finally {
+            event.target.value = '';
+        }
+    }
+
+    async startBarcodeCameraScan() {
+        if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+            alert(i18n.t('alert.barcode_camera_unsupported'));
+            this.updateBarcodeImportStatus(i18n.t('alert.barcode_camera_unsupported'), 'error');
+            return;
+        }
+
+        if (typeof BarcodeDetector === 'undefined') {
+            alert(i18n.t('alert.barcode_import_unsupported'));
+            this.updateBarcodeImportStatus(i18n.t('alert.barcode_import_unsupported'), 'error');
+            return;
+        }
+
+        const scannerContainer = document.getElementById('barcodeScanner');
+        const scannerVideo = document.getElementById('barcodeScannerVideo');
+        if (!scannerContainer || !scannerVideo) {
+            return;
+        }
+
+        this.stopBarcodeCameraScan();
+        this.updateBarcodeImportStatus(i18n.t('form.barcode_camera_ready'), 'info');
+
+        try {
+            this.barcodeScannerStream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: { ideal: 'environment' }
+                }
+            });
+
+            scannerContainer.style.display = 'block';
+            scannerVideo.srcObject = this.barcodeScannerStream;
+            if (typeof scannerVideo.play === 'function') {
+                await scannerVideo.play();
+            }
+
+            this.scanBarcodeCameraFrame();
+        } catch (error) {
+            console.error('Unable to start barcode camera scan:', error);
+            this.stopBarcodeCameraScan(i18n.t('alert.barcode_camera_failed'), true);
+        }
+    }
+
+    scanBarcodeCameraFrame() {
+        const scannerVideo = document.getElementById('barcodeScannerVideo');
+
+        if (!this.barcodeScannerStream || !scannerVideo) {
+            return;
+        }
+
+        this.barcodeScannerFrameRequest = requestAnimationFrame(async () => {
+            if (scannerVideo.readyState >= 2 && !this.isScanningBarcodeFrame) {
+                this.isScanningBarcodeFrame = true;
+
+                try {
+                    const detectedBarcode = await this.detectBarcodeFromSource(scannerVideo);
+
+                    if (detectedBarcode) {
+                        this.applyDetectedBarcode(detectedBarcode.rawValue, detectedBarcode.format);
+                        this.stopBarcodeCameraScan();
+                        return;
+                    }
+                } catch (error) {
+                    console.warn('Unable to scan barcode from camera frame:', error);
+                } finally {
+                    this.isScanningBarcodeFrame = false;
+                }
+            }
+
+            this.scanBarcodeCameraFrame();
+        });
+    }
+
+    stopBarcodeCameraScan(statusMessage = '', showAlert = false) {
+        if (this.barcodeScannerFrameRequest) {
+            cancelAnimationFrame(this.barcodeScannerFrameRequest);
+            this.barcodeScannerFrameRequest = null;
+        }
+
+        if (this.barcodeScannerStream) {
+            this.barcodeScannerStream.getTracks().forEach(track => track.stop());
+            this.barcodeScannerStream = null;
+        }
+
+        this.isScanningBarcodeFrame = false;
+
+        const scannerContainer = document.getElementById('barcodeScanner');
+        if (scannerContainer) {
+            scannerContainer.style.display = 'none';
+        }
+
+        const scannerVideo = document.getElementById('barcodeScannerVideo');
+        if (scannerVideo) {
+            scannerVideo.srcObject = null;
+        }
+
+        if (statusMessage) {
+            this.updateBarcodeImportStatus(statusMessage, showAlert ? 'error' : 'info');
+            if (showAlert) {
+                alert(statusMessage);
+            }
+        }
     }
 
     // Render all cards
