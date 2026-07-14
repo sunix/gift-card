@@ -451,20 +451,29 @@ class GiftCardManager {
 
     async loadImageFromFile(file) {
         return new Promise((resolve, reject) => {
-            const objectUrl = URL.createObjectURL(file);
-            const image = new Image();
+            let objectUrl;
 
-            image.onload = () => {
-                URL.revokeObjectURL(objectUrl);
-                resolve(image);
-            };
+            try {
+                objectUrl = URL.createObjectURL(file);
+                const image = new Image();
 
-            image.onerror = () => {
-                URL.revokeObjectURL(objectUrl);
+                image.onload = () => {
+                    URL.revokeObjectURL(objectUrl);
+                    resolve(image);
+                };
+
+                image.onerror = () => {
+                    URL.revokeObjectURL(objectUrl);
+                    reject(new Error(i18n.t('alert.import_read_failed')));
+                };
+
+                image.src = objectUrl;
+            } catch (error) {
+                if (objectUrl) {
+                    URL.revokeObjectURL(objectUrl);
+                }
                 reject(new Error(i18n.t('alert.import_read_failed')));
-            };
-
-            image.src = objectUrl;
+            }
         });
     }
 
@@ -540,31 +549,36 @@ class GiftCardManager {
     scanBarcodeCameraFrame() {
         const scannerVideo = document.getElementById('barcodeScannerVideo');
 
-        if (!this.barcodeScannerStream || !scannerVideo) {
+        if (!this.barcodeScannerStream || !scannerVideo || this.isScanningBarcodeFrame) {
             return;
         }
 
-        this.barcodeScannerFrameRequest = requestAnimationFrame(async () => {
-            if (scannerVideo.readyState >= 2 && !this.isScanningBarcodeFrame) {
-                this.isScanningBarcodeFrame = true;
-
-                try {
-                    const detectedBarcode = await this.detectBarcodeFromSource(scannerVideo);
-
-                    if (detectedBarcode) {
-                        this.applyDetectedBarcode(detectedBarcode.rawValue, detectedBarcode.format);
-                        this.isScanningBarcodeFrame = false;
-                        this.stopBarcodeCameraScan();
-                        return;
-                    }
-                } catch (error) {
-                    console.warn('Unable to scan barcode from camera frame:', error);
-                } finally {
-                    this.isScanningBarcodeFrame = false;
-                }
+        this.barcodeScannerFrameRequest = requestAnimationFrame(() => {
+            if (scannerVideo.readyState < 2) {
+                this.scanBarcodeCameraFrame();
+                return;
             }
 
-            this.scanBarcodeCameraFrame();
+            this.isScanningBarcodeFrame = true;
+
+            this.detectBarcodeFromSource(scannerVideo)
+                .then((detectedBarcode) => {
+                    if (detectedBarcode) {
+                        this.applyDetectedBarcode(detectedBarcode.rawValue, detectedBarcode.format);
+                        this.stopBarcodeCameraScan();
+                    }
+                })
+                .catch((error) => {
+                    console.warn('Unable to scan barcode from camera frame:', error);
+                })
+                .finally(() => {
+                    const shouldContinueScanning = !!this.barcodeScannerStream;
+                    this.isScanningBarcodeFrame = false;
+
+                    if (shouldContinueScanning) {
+                        this.scanBarcodeCameraFrame();
+                    }
+                });
         });
     }
 
