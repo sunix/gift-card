@@ -207,6 +207,7 @@
             <div class="navbar-menu" id="navbarMenu">
                 <a href="#introSection" class="nav-link" data-i18n="nav.introduction">📖 Introduction</a>
                 <a href="#cardsList" class="nav-link" data-i18n="nav.my_cards">🎁 My Cards</a>
+                <a href="#shoppingListsSection" class="nav-link" data-i18n="nav.shopping_lists">🛒 Shopping Lists</a>
                 <a href="#addCardSection" class="nav-link" data-i18n="nav.add_card">➕ Add Card</a>
                 <a href="#importExportSection" class="nav-link" data-i18n="nav.import_export">💾 Import/Export</a>
                 <div class="language-selector" id="languageSelector">
@@ -332,6 +333,109 @@
                     <div id="cardDetailContent"></div>
                 </div>
             </div>
+
+            <!-- Shopping Lists Overview Section -->
+            <section class="cards-list" id="shoppingListsSection" style="display: none;">
+                <h2 data-i18n="shopping.title">🛒 Shopping Lists</h2>
+                <div style="margin-bottom: 1rem;">
+                    <button id="createShoppingListBtn" class="btn btn-primary" data-i18n="shopping.create_list">+ Create New List</button>
+                </div>
+                <div id="shoppingListsContainer"></div>
+            </section>
+
+            <!-- Shopping List Detail Section -->
+            <section id="shoppingListDetailSection" style="display: none;">
+                <div id="shoppingListDetailContent"></div>
+            </section>
+
+            <!-- Shopping List: Create List Modal -->
+            <div id="shoppingCreateListModal" class="modal">
+                <div class="modal-content">
+                    <span class="close" id="shoppingCreateListModalClose">&times;</span>
+                    <h3 data-i18n="shopping.create_list_title">Create Shopping List</h3>
+                    <form id="shoppingCreateListForm">
+                        <div class="form-group">
+                            <label for="newListName" data-i18n="shopping.list_name">List Name:</label>
+                            <input type="text" id="newListName" required data-i18n-placeholder="shopping.list_name_placeholder" placeholder="e.g., Weekly groceries">
+                        </div>
+                        <div class="form-group">
+                            <label for="newListStore" data-i18n="shopping.list_store">Store (optional):</label>
+                            <input type="text" id="newListStore" data-i18n-placeholder="shopping.list_store_placeholder" placeholder="e.g., Super U">
+                        </div>
+                        <div class="form-group">
+                            <label for="newListDate" data-i18n="shopping.list_date">Planned Date (optional):</label>
+                            <input type="date" id="newListDate">
+                        </div>
+                        <button type="submit" class="btn btn-primary" data-i18n="shopping.create_list">Create</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Shopping List: Edit List Modal -->
+            <div id="shoppingEditListModal" class="modal">
+                <div class="modal-content">
+                    <span class="close" id="shoppingEditListModalClose">&times;</span>
+                    <h3 data-i18n="shopping.edit_list_title">Edit Shopping List</h3>
+                    <form id="shoppingEditListForm">
+                        <div class="form-group">
+                            <label for="editListName" data-i18n="shopping.list_name">List Name:</label>
+                            <input type="text" id="editListName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editListStore" data-i18n="shopping.list_store">Store (optional):</label>
+                            <input type="text" id="editListStore">
+                        </div>
+                        <div class="form-group">
+                            <label for="editListDate" data-i18n="shopping.list_date">Planned Date (optional):</label>
+                            <input type="date" id="editListDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="editListStatus" data-i18n="shopping.list_status">Status:</label>
+                            <select id="editListStatus">
+                                <option value="draft" data-i18n="shopping.status_draft">Draft</option>
+                                <option value="inProgress" data-i18n="shopping.status_inProgress">In Progress</option>
+                                <option value="completed" data-i18n="shopping.status_completed">Completed</option>
+                            </select>
+                        </div>
+                        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+                            <button type="submit" class="btn btn-primary" data-i18n="shopping.save">Save</button>
+                            <button type="button" class="btn btn-secondary" id="cancelEditListBtn" data-i18n="shopping.cancel">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Shopping List: Item Add/Edit Modal -->
+            <div id="shoppingItemModal" class="modal">
+                <div class="modal-content">
+                    <span class="close" id="shoppingItemModalClose">&times;</span>
+                    <div id="shoppingItemModalContent"></div>
+                </div>
+            </div>
+
+            <!-- Shopping List: Card Selection Modal -->
+            <div id="shoppingCardSelectionModal" class="modal">
+                <div class="modal-content">
+                    <span class="close" id="shoppingCardSelectionModalClose">&times;</span>
+                    <div id="shoppingCardSelectionContent"></div>
+                </div>
+            </div>
+
+            <!-- Shopping List: Checkout Modal -->
+            <div id="shoppingCheckoutModal" class="modal shopping-checkout-modal">
+                <div class="modal-content shopping-checkout-content">
+                    <span class="close" id="shoppingCheckoutModalClose">&times;</span>
+                    <div id="shoppingCheckoutContent"></div>
+                </div>
+            </div>
+
+            <!-- Shopping List: Confirm Payment Modal -->
+            <div id="shoppingConfirmPaymentModal" class="modal">
+                <div class="modal-content">
+                    <span class="close" id="shoppingConfirmPaymentModalClose">&times;</span>
+                    <div id="shoppingConfirmPaymentContent"></div>
+                </div>
+            </div>
         </main>
         
         <footer style="margin-top: 2rem; padding: 1rem; text-align: center; font-size: 0.85rem; color: #666; border-top: 1px solid #e0e0e0;">
@@ -345,6 +449,7 @@
 <script src="i18n.js"></script>
 <script src="barcode.js"></script>
 <script src="app.js"></script>
+<script src="shopping.js"></script>
 
 <!-- Menu toggle and language selector scripts -->
 <script>

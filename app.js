@@ -240,29 +240,44 @@ class GiftCardManager {
     handleHashNavigation() {
         const hash = window.location.hash;
         
-        // Define section visibility rules
-        const sections = {
-            'archivedCardsSection': { id: 'archivedCardsSection', visibleOn: ['#archivedCardsSection'] },
-            'cardsList': { id: 'cardsList', visibleOn: ['default'] },
-            'addCardSection': { id: 'addCardSection', visibleOn: ['default'] },
-            'importExportSection': { id: 'importExportSection', visibleOn: ['default'] },
-            'introSection': { id: 'introSection', visibleOn: ['default'] }
-        };
-        
-        // Determine current view
-        const currentView = hash === '#archivedCardsSection' ? '#archivedCardsSection' : 'default';
-        
-        // Update visibility for all sections
-        Object.values(sections).forEach(section => {
-            const element = document.getElementById(section.id);
-            if (element) {
-                element.style.display = section.visibleOn.includes(currentView) ? 'block' : 'none';
+        // All known sections
+        const allSectionIds = [
+            'archivedCardsSection', 'cardsList', 'addCardSection',
+            'importExportSection', 'introSection',
+            'shoppingListsSection', 'shoppingListDetailSection'
+        ];
+
+        // Shopping list views
+        const isShoppingLists = hash === '#shoppingListsSection';
+        const isShoppingDetail = hash.startsWith('#shoppingListDetail:');
+        const isArchived = hash === '#archivedCardsSection';
+        const isDefault = !isShoppingLists && !isShoppingDetail && !isArchived;
+
+        // Default sections shown on main view
+        const defaultSections = ['cardsList', 'addCardSection', 'importExportSection', 'introSection'];
+
+        allSectionIds.forEach(id => {
+            const element = document.getElementById(id);
+            if (!element) return;
+            if (isArchived) {
+                element.style.display = id === 'archivedCardsSection' ? 'block' : 'none';
+            } else if (isShoppingLists) {
+                element.style.display = id === 'shoppingListsSection' ? 'block' : 'none';
+            } else if (isShoppingDetail) {
+                element.style.display = id === 'shoppingListDetailSection' ? 'block' : 'none';
+            } else {
+                element.style.display = defaultSections.includes(id) ? 'block' : 'none';
             }
         });
         
-        // Render archived cards if on that view
-        if (currentView === '#archivedCardsSection') {
+        // Render appropriate content
+        if (isArchived) {
             this.renderArchivedCards();
+        } else if (isShoppingLists && window.shoppingListManager) {
+            window.shoppingListManager.renderShoppingLists();
+        } else if (isShoppingDetail && window.shoppingListManager) {
+            const listId = hash.split(':').slice(1).join(':');
+            window.shoppingListManager.renderListDetail(listId);
         }
     }
 
@@ -1085,7 +1100,8 @@ class GiftCardManager {
             const exportData = {
                 version: '1.0',
                 exportDate: new Date().toISOString(),
-                cards: this.cards
+                cards: this.cards,
+                shoppingLists: window.shoppingListManager ? window.shoppingListManager.getExportData() : []
             };
 
             // Convert to JSON
@@ -1178,6 +1194,11 @@ class GiftCardManager {
                 }));
                 this.saveCards();
                 this.renderCards();
+
+                // Import shopping lists if present (backward compatible: older backups may not have this)
+                if (window.shoppingListManager && Array.isArray(importedData.shoppingLists)) {
+                    window.shoppingListManager.importShoppingLists(importedData.shoppingLists);
+                }
                 
                 // Format success message with export date if available and valid
                 let exportDateStr = 'backup';
@@ -1309,6 +1330,14 @@ if (typeof window !== 'undefined') {
     window.addEventListener('i18nReady', async () => {
         window.giftCardManager = new GiftCardManager();
         await window.giftCardManager.init();
+
+        // Initialize Shopping List Manager
+        if (typeof ShoppingListManager !== 'undefined') {
+            window.shoppingListManager = new ShoppingListManager(window.giftCardManager);
+            window.shoppingListManager.init();
+            // Trigger navigation again so shopping sections render if needed
+            window.giftCardManager.handleHashNavigation();
+        }
         
         // Register service worker for PWA functionality
         if ('serviceWorker' in navigator) {
