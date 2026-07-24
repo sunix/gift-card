@@ -1107,7 +1107,6 @@ class ShoppingListManager {
             itemsList.addEventListener('dragstart', e => {
                 const item = e.target.closest('.shopping-item');
                 if (!item) return;
-                this.draggedShoppingItemId = null;
                 this.draggedShoppingItemId = item.dataset.itemId;
                 if (e.dataTransfer) {
                     e.dataTransfer.effectAllowed = 'move';
