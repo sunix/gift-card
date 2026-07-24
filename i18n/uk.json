@@ -208,5 +208,10 @@
   "shopping.list_not_found": "Список покупок не знайдено.",
   "shopping.status_draft": "Чернетка",
   "shopping.status_inProgress": "В процесі",
-  "shopping.status_completed": "Завершено"
+  "shopping.status_completed": "Завершено",
+  "shopping.product_lookup_loading": "Пошук інформації про продукт…",
+  "shopping.product_lookup_found": "Продукт знайдено: {name}",
+  "shopping.product_lookup_not_found": "Продукт не знайдено. Введіть дані вручну.",
+  "shopping.price_suggestion": "Остання відома ціна в {store}: €{price} ({date})",
+  "shopping.use_suggested_price": "Використати цю ціну"
 }

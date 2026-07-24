@@ -208,5 +208,10 @@
   "shopping.list_not_found": "Liste de courses introuvable.",
   "shopping.status_draft": "Brouillon",
   "shopping.status_inProgress": "En cours",
-  "shopping.status_completed": "Terminé"
+  "shopping.status_completed": "Terminé",
+  "shopping.product_lookup_loading": "Recherche des informations produit…",
+  "shopping.product_lookup_found": "Produit trouvé : {name}",
+  "shopping.product_lookup_not_found": "Produit introuvable. Veuillez saisir les informations manuellement.",
+  "shopping.price_suggestion": "Dernier prix connu chez {store} : €{price} ({date})",
+  "shopping.use_suggested_price": "Utiliser ce prix"
 }

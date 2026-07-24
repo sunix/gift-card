@@ -91,7 +91,12 @@ const i18nMock = {
             'alert.barcode_camera_failed': 'Camera failed.',
             'alert.barcode_not_found': 'No barcode found.',
             'card.fidelity_badge': 'Fidelity Card',
-            'card.current_balance': 'Current Balance:'
+            'card.current_balance': 'Current Balance:',
+            'shopping.product_lookup_loading': 'Looking up product info...',
+            'shopping.product_lookup_found': 'Product found: {name}',
+            'shopping.product_lookup_not_found': 'Product not found.',
+            'shopping.price_suggestion': 'Last known price at {store}: €{price} ({date})',
+            'shopping.use_suggested_price': 'Use this price'
         };
         let msg = translations[key] || key;
         if (params) {
@@ -837,6 +842,199 @@ describe('ShoppingListManager', () => {
             expect(manager.escapeHtml('')).toBe('');
             expect(manager.escapeHtml(null)).toBe('');
             expect(manager.escapeHtml(undefined)).toBe('');
+        });
+    });
+
+    // =====================
+    // Product Cache
+    // =====================
+    describe('product cache', () => {
+        test('saveProductToCache and getProductFromCache round-trip', () => {
+            manager.saveProductToCache('3017620422003', { name: 'Nutella', brand: 'Ferrero', quantity: '400 g' });
+            const product = manager.getProductFromCache('3017620422003');
+            expect(product.name).toBe('Nutella');
+            expect(product.brand).toBe('Ferrero');
+            expect(product.quantity).toBe('400 g');
+        });
+
+        test('getProductFromCache returns null for unknown barcode', () => {
+            expect(manager.getProductFromCache('0000000000000')).toBeNull();
+        });
+
+        test('getProductFromCache returns null for empty/null barcode', () => {
+            expect(manager.getProductFromCache(null)).toBeNull();
+            expect(manager.getProductFromCache('')).toBeNull();
+        });
+
+        test('saveProductToCache merges with existing entry', () => {
+            manager.saveProductToCache('abc123', { name: 'Test', brand: 'Brand' });
+            manager.saveProductToCache('abc123', { quantity: '500 ml', source: 'openfoodfacts' });
+            const product = manager.getProductFromCache('abc123');
+            expect(product.name).toBe('Test');
+            expect(product.brand).toBe('Brand');
+            expect(product.quantity).toBe('500 ml');
+        });
+
+        test('product cache persists across instances', () => {
+            manager.saveProductToCache('3017620422003', { name: 'Nutella' });
+            const m2 = new ShoppingListManager(makeMockCardManager());
+            expect(m2.getProductFromCache('3017620422003').name).toBe('Nutella');
+        });
+
+        test('loadProductCache handles corrupted data gracefully', () => {
+            localStorage.setItem('productCache', 'invalid json');
+            const m = new ShoppingListManager(makeMockCardManager());
+            expect(m.productCache).toEqual({});
+        });
+    });
+
+    // =====================
+    // Price History
+    // =====================
+    describe('price history', () => {
+        test('recordPriceForBarcode stores price for a store', () => {
+            manager.recordPriceForBarcode('3017620422003', 'Super U', 349);
+            const suggestion = manager.getSuggestedPriceForStore('3017620422003', 'Super U');
+            expect(suggestion).not.toBeNull();
+            expect(suggestion.unitPriceCents).toBe(349);
+            expect(suggestion.store).toBe('Super U');
+            expect(suggestion.observedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+        });
+
+        test('getSuggestedPriceForStore returns null when no match', () => {
+            manager.recordPriceForBarcode('3017620422003', 'Super U', 349);
+            expect(manager.getSuggestedPriceForStore('3017620422003', 'Carrefour')).toBeNull();
+        });
+
+        test('getSuggestedPriceForStore returns null for unknown barcode', () => {
+            expect(manager.getSuggestedPriceForStore('9999999999999', 'Super U')).toBeNull();
+        });
+
+        test('getSuggestedPriceForStore returns null for empty inputs', () => {
+            expect(manager.getSuggestedPriceForStore(null, 'Super U')).toBeNull();
+            expect(manager.getSuggestedPriceForStore('3017620422003', '')).toBeNull();
+        });
+
+        test('recordPriceForBarcode updates existing price for same store', () => {
+            manager.recordPriceForBarcode('3017620422003', 'Super U', 349);
+            manager.recordPriceForBarcode('3017620422003', 'Super U', 379);
+            const suggestion = manager.getSuggestedPriceForStore('3017620422003', 'Super U');
+            expect(suggestion.unitPriceCents).toBe(379);
+            // Only one entry per store
+            const prices = manager.productCache['3017620422003'].prices;
+            expect(prices.filter(p => p.store === 'Super U')).toHaveLength(1);
+        });
+
+        test('recordPriceForBarcode stores separate entries for different stores', () => {
+            manager.recordPriceForBarcode('3017620422003', 'Super U', 349);
+            manager.recordPriceForBarcode('3017620422003', 'Carrefour', 389);
+            expect(manager.getSuggestedPriceForStore('3017620422003', 'Super U').unitPriceCents).toBe(349);
+            expect(manager.getSuggestedPriceForStore('3017620422003', 'Carrefour').unitPriceCents).toBe(389);
+        });
+
+        test('recordPriceForBarcode does nothing for null/empty inputs', () => {
+            manager.recordPriceForBarcode(null, 'Super U', 349);
+            manager.recordPriceForBarcode('3017620422003', '', 349);
+            manager.recordPriceForBarcode('3017620422003', 'Super U', null);
+            expect(manager.productCache['3017620422003']).toBeUndefined();
+        });
+
+        test('price history coexists with product info', () => {
+            manager.saveProductToCache('3017620422003', { name: 'Nutella', brand: 'Ferrero' });
+            manager.recordPriceForBarcode('3017620422003', 'Lidl', 299);
+            const product = manager.getProductFromCache('3017620422003');
+            expect(product.name).toBe('Nutella');
+            expect(product.prices).toHaveLength(1);
+            expect(product.prices[0].unitPriceCents).toBe(299);
+        });
+    });
+
+    // =====================
+    // lookupProductInfo
+    // =====================
+    describe('lookupProductInfo', () => {
+        beforeEach(() => {
+            // Reset fetch mock for each test
+            global.fetch = undefined;
+        });
+
+        test('returns cached product without fetching when cache has name', async () => {
+            manager.saveProductToCache('3017620422003', { name: 'Nutella', brand: 'Ferrero' });
+            const fetchSpy = jest.fn();
+            global.fetch = fetchSpy;
+            const result = await manager.lookupProductInfo('3017620422003');
+            expect(result.name).toBe('Nutella');
+            expect(result.fromCache).toBe(true);
+            expect(fetchSpy).not.toHaveBeenCalled();
+        });
+
+        test('returns null for null/empty barcode without fetching', async () => {
+            const fetchSpy = jest.fn();
+            global.fetch = fetchSpy;
+            expect(await manager.lookupProductInfo(null)).toBeNull();
+            expect(await manager.lookupProductInfo('')).toBeNull();
+            expect(fetchSpy).not.toHaveBeenCalled();
+        });
+
+        test('returns null gracefully when offline (fetch throws)', async () => {
+            global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+            const result = await manager.lookupProductInfo('3017620422003');
+            expect(result).toBeNull();
+        });
+
+        test('returns null when Open Food Facts returns status 0', async () => {
+            global.fetch = jest.fn().mockResolvedValue({
+                ok: true,
+                json: async () => ({ status: 0, product: null })
+            });
+            const result = await manager.lookupProductInfo('0000000000000');
+            expect(result).toBeNull();
+        });
+
+        test('saves product to cache when found via Open Food Facts', async () => {
+            global.fetch = jest.fn().mockResolvedValue({
+                ok: true,
+                json: async () => ({
+                    status: 1,
+                    product: {
+                        product_name: 'Nutella',
+                        brands: 'Ferrero',
+                        quantity: '400 g',
+                        categories_tags: ['en:spreads'],
+                        image_front_small_url: 'https://example.com/nutella.jpg'
+                    }
+                })
+            });
+            const result = await manager.lookupProductInfo('3017620422003');
+            expect(result).not.toBeNull();
+            expect(result.name).toBe('Nutella');
+            expect(result.brand).toBe('Ferrero');
+            expect(result.quantity).toBe('400 g');
+            expect(result.source).toBe('openfoodfacts');
+            // Should be saved to cache
+            const cached = manager.getProductFromCache('3017620422003');
+            expect(cached.name).toBe('Nutella');
+        });
+
+        test('tries Open Products Facts when Open Food Facts returns nothing', async () => {
+            let callCount = 0;
+            global.fetch = jest.fn().mockImplementation((url) => {
+                callCount++;
+                if (url.includes('openfoodfacts')) {
+                    return Promise.resolve({ ok: true, json: async () => ({ status: 0 }) });
+                }
+                return Promise.resolve({
+                    ok: true,
+                    json: async () => ({
+                        status: 1,
+                        product: { product_name: 'Shampoo', brands: 'Brand X', quantity: '250 ml' }
+                    })
+                });
+            });
+            const result = await manager.lookupProductInfo('1234567890123');
+            expect(callCount).toBe(2);
+            expect(result.name).toBe('Shampoo');
+            expect(result.source).toBe('openproductsfacts');
         });
     });
 });

@@ -208,5 +208,10 @@
   "shopping.list_not_found": "Shopping list not found.",
   "shopping.status_draft": "Draft",
   "shopping.status_inProgress": "In Progress",
-  "shopping.status_completed": "Completed"
+  "shopping.status_completed": "Completed",
+  "shopping.product_lookup_loading": "Looking up product info…",
+  "shopping.product_lookup_found": "Product found: {name}",
+  "shopping.product_lookup_not_found": "Product not found. Please enter details manually.",
+  "shopping.price_suggestion": "Last known price at {store}: €{price} ({date})",
+  "shopping.use_suggested_price": "Use this price"
 }

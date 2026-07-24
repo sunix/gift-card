@@ -208,5 +208,10 @@
   "shopping.list_not_found": "Список покупок не найден.",
   "shopping.status_draft": "Черновик",
   "shopping.status_inProgress": "В процессе",
-  "shopping.status_completed": "Завершён"
+  "shopping.status_completed": "Завершён",
+  "shopping.product_lookup_loading": "Поиск информации о продукте…",
+  "shopping.product_lookup_found": "Продукт найден: {name}",
+  "shopping.product_lookup_not_found": "Продукт не найден. Введите данные вручную.",
+  "shopping.price_suggestion": "Последняя известная цена в {store}: €{price} ({date})",
+  "shopping.use_suggested_price": "Использовать эту цену"
 }

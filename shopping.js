@@ -4,10 +4,12 @@
 class ShoppingListManager {
     constructor(cardManager) {
         this.shoppingLists = this.loadShoppingLists();
+        this.productCache = this.loadProductCache();
         this.cardManager = cardManager;
         this.currentListId = null;
         this.pendingItemScanListId = null;
         this.pendingItemScanItemId = null;
+        this.pendingProductInfo = null;
         this.barcodeScannerStream = null;
         this.barcodeScannerFrameRequest = null;
         this.isScanningBarcodeFrame = false;
@@ -35,6 +37,57 @@ class ShoppingListManager {
         } catch (error) {
             console.error('Unable to save shopping lists to localStorage:', error);
         }
+    }
+
+    // ===========================
+    // Product Cache
+    // ===========================
+
+    loadProductCache() {
+        try {
+            const stored = localStorage.getItem('productCache');
+            return stored ? JSON.parse(stored) : {};
+        } catch {
+            return {};
+        }
+    }
+
+    saveProductCache() {
+        try {
+            localStorage.setItem('productCache', JSON.stringify(this.productCache));
+        } catch (error) {
+            console.error('Unable to save product cache:', error);
+        }
+    }
+
+    getProductFromCache(barcode) {
+        if (!barcode) return null;
+        return this.productCache[barcode] || null;
+    }
+
+    saveProductToCache(barcode, productInfo) {
+        if (!barcode) return;
+        const existing = this.productCache[barcode] || {};
+        this.productCache[barcode] = { ...existing, ...productInfo };
+        this.saveProductCache();
+    }
+
+    recordPriceForBarcode(barcode, store, unitPriceCents) {
+        if (!barcode || !store || unitPriceCents === null || unitPriceCents === undefined) return;
+        const product = this.productCache[barcode] || {};
+        const prices = Array.isArray(product.prices) ? product.prices : [];
+        const today = new Date().toISOString().slice(0, 10);
+        const filtered = prices.filter(p => p.store !== store);
+        product.prices = [{ store, unitPriceCents, observedAt: today }, ...filtered];
+        this.productCache[barcode] = product;
+        this.saveProductCache();
+    }
+
+    getSuggestedPriceForStore(barcode, store) {
+        if (!barcode || !store) return null;
+        const product = this.getProductFromCache(barcode);
+        if (!product || !Array.isArray(product.prices)) return null;
+        return product.prices.find(p => p.store === store) || null;
     }
 
     // ===========================
@@ -519,8 +572,7 @@ class ShoppingListManager {
             const img = await this.loadImageFromFile(file);
             const result = await this.detectBarcodeFromSource(img);
             if (result) {
-                this.applyBarcodeToItem(listId, itemId, result.rawValue, this.mapDetectedBarcodeFormat(result.format));
-                this.updateScanStatus(i18n.t('form.barcode_import_success', { format: this.mapDetectedBarcodeFormat(result.format) }), 'success');
+                await this.applyBarcodeToItem(listId, itemId, result.rawValue, this.mapDetectedBarcodeFormat(result.format));
             } else {
                 this.updateScanStatus(i18n.t('alert.barcode_not_found'), 'error');
             }
@@ -547,10 +599,51 @@ class ShoppingListManager {
         });
     }
 
-    applyBarcodeToItem(listId, itemId, barcode, format) {
-        this.updateItem(listId, itemId, { barcode, barcodeFormat: format || 'CODE128' });
-        this.updateScanStatus(i18n.t('form.barcode_import_success', { format: format || 'CODE128' }), 'success');
+    async applyBarcodeToItem(listId, itemId, barcode, format) {
+        const barcodeFormat = format || 'CODE128';
+        const isNewItem = !itemId || itemId === '__new__';
+
+        if (!isNewItem) {
+            this.updateItem(listId, itemId, { barcode, barcodeFormat });
+        }
+
+        this.updateScanStatus(i18n.t('shopping.product_lookup_loading'), 'info');
         this.renderListDetail(listId);
+
+        const product = await this.lookupProductInfo(barcode);
+
+        if (!isNewItem) {
+            if (product) {
+                const list = this.getList(listId);
+                const item = list && list.items.find(it => it.id === itemId);
+                if (item) {
+                    const updates = {};
+                    if (!item.name) {
+                        const productName = [product.name, product.brand].filter(Boolean).join(' — ');
+                        if (productName) updates.name = productName;
+                    }
+                    if (!item.note && product.quantity) updates.note = product.quantity;
+                    if (Object.keys(updates).length > 0) {
+                        this.updateItem(listId, itemId, updates);
+                        this.renderListDetail(listId);
+                    }
+                }
+                this.updateScanStatus(i18n.t('shopping.product_lookup_found', { name: product.name || barcode }), 'success');
+            } else {
+                this.updateScanStatus(i18n.t('form.barcode_import_success', { format: barcodeFormat }), 'success');
+            }
+        } else {
+            // New item: store info so showAddItemModal can pre-fill the form
+            this.pendingProductInfo = product
+                ? { ...product, barcode, barcodeFormat }
+                : { barcode, barcodeFormat };
+            this.showAddItemModal(listId);
+            if (product) {
+                this.updateScanStatus(i18n.t('shopping.product_lookup_found', { name: product.name || barcode }), 'success');
+            } else {
+                this.updateScanStatus(i18n.t('form.barcode_import_success', { format: barcodeFormat }), 'success');
+            }
+        }
     }
 
     updateScanStatus(message, type) {
@@ -559,6 +652,69 @@ class ShoppingListManager {
         el.textContent = message || '';
         el.className = 'barcode-import-status';
         if (type) el.classList.add('barcode-import-status-' + type);
+    }
+
+    // ===========================
+    // Product Lookup
+    // ===========================
+
+    async fetchOpenFoodFacts(barcode) {
+        try {
+            const url = `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json`;
+            const signal = typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(5000) : undefined;
+            const resp = await fetch(url, signal ? { signal } : {});
+            if (!resp.ok) return null;
+            const data = await resp.json();
+            if (data.status !== 1 || !data.product) return null;
+            const p = data.product;
+            return {
+                name: p.product_name || p.product_name_en || null,
+                brand: p.brands || null,
+                quantity: p.quantity || null,
+                category: (p.categories_tags && p.categories_tags[0]) || null,
+                imageUrl: p.image_front_small_url || p.image_url || null,
+                source: 'openfoodfacts'
+            };
+        } catch {
+            return null;
+        }
+    }
+
+    async fetchOpenProductsFacts(barcode) {
+        try {
+            const url = `https://world.openproductsfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json`;
+            const signal = typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(5000) : undefined;
+            const resp = await fetch(url, signal ? { signal } : {});
+            if (!resp.ok) return null;
+            const data = await resp.json();
+            if (data.status !== 1 || !data.product) return null;
+            const p = data.product;
+            return {
+                name: p.product_name || null,
+                brand: p.brands || null,
+                quantity: p.quantity || null,
+                category: null,
+                imageUrl: p.image_front_small_url || p.image_url || null,
+                source: 'openproductsfacts'
+            };
+        } catch {
+            return null;
+        }
+    }
+
+    async lookupProductInfo(barcode) {
+        if (!barcode) return null;
+        // 1. Check local cache first
+        const cached = this.getProductFromCache(barcode);
+        if (cached && cached.name) return { ...cached, fromCache: true };
+        // 2. Try Open Food Facts
+        let product = await this.fetchOpenFoodFacts(barcode);
+        // 3. Try Open Products Facts for non-food items
+        if (!product) product = await this.fetchOpenProductsFacts(barcode);
+        if (product) {
+            this.saveProductToCache(barcode, product);
+        }
+        return product;
     }
 
     // ===========================
@@ -1022,7 +1178,10 @@ class ShoppingListManager {
         modal.dataset.itemId = '';
 
         const content = document.getElementById('shoppingItemModalContent');
-        content.innerHTML = this.renderItemForm(null);
+        const prefill = this.pendingProductInfo;
+        this.pendingProductInfo = null;
+        const list = this.getList(listId);
+        content.innerHTML = this.renderItemForm(null, prefill, list ? list.store : '');
         modal.style.display = 'block';
         this.bindItemFormEvents(listId, null);
     }
@@ -1038,25 +1197,62 @@ class ShoppingListManager {
         modal.dataset.itemId = itemId;
 
         const content = document.getElementById('shoppingItemModalContent');
-        content.innerHTML = this.renderItemForm(item);
+        const priceSuggestion = item.barcode ? this.getSuggestedPriceForStore(item.barcode, list.store) : null;
+        content.innerHTML = this.renderItemForm(item, null, list.store, priceSuggestion);
         modal.style.display = 'block';
         this.bindItemFormEvents(listId, itemId);
     }
 
-    renderItemForm(item) {
+    renderItemForm(item, prefill = null, store = '', priceSuggestion = null) {
         const isEdit = !!item;
         const title = isEdit ? i18n.t('shopping.edit_item_title') : i18n.t('shopping.add_item_title');
-        const name = item ? this.escapeHtml(item.name) : '';
-        const note = item ? this.escapeHtml(item.note || '') : '';
+
+        const name = item ? this.escapeHtml(item.name)
+            : (prefill && prefill.name ? this.escapeHtml([prefill.name, prefill.brand].filter(Boolean).join(' — ')) : '');
+        const note = item ? this.escapeHtml(item.note || '')
+            : (prefill && prefill.quantity ? this.escapeHtml(prefill.quantity) : '');
         const pricingMode = item ? item.pricingMode : 'unit';
         const unitPrice = item && item.unitPriceCents !== null ? (item.unitPriceCents / 100).toFixed(2) : '';
         const qty = item ? (item.quantity !== null ? item.quantity : 1) : 1;
         const pricePerKg = item && item.pricePerKgCents !== null ? (item.pricePerKgCents / 100).toFixed(2) : '';
         const weight = item && item.weightKg !== null ? item.weightKg : '';
-        const barcode = item && item.barcode ? this.escapeHtml(item.barcode) : '';
+        const barcode = item && item.barcode ? this.escapeHtml(item.barcode)
+            : (prefill && prefill.barcode ? this.escapeHtml(prefill.barcode) : '');
+
+        // Product info from cache
+        const barcodeValue = item && item.barcode ? item.barcode : (prefill && prefill.barcode ? prefill.barcode : null);
+        const cachedProduct = barcodeValue ? this.getProductFromCache(barcodeValue) : null;
+        let productInfoHtml = '';
+        if (cachedProduct && cachedProduct.name) {
+            const imgHtml = cachedProduct.imageUrl
+                ? `<img src="${this.escapeHtml(cachedProduct.imageUrl)}" alt="" class="product-lookup-image" loading="lazy">`
+                : '';
+            const brandHtml = cachedProduct.brand
+                ? `<span class="product-lookup-brand">${this.escapeHtml(cachedProduct.brand)}</span>` : '';
+            const qtyHtml = cachedProduct.quantity
+                ? `<span class="product-lookup-qty">${this.escapeHtml(cachedProduct.quantity)}</span>` : '';
+            productInfoHtml = `<div class="product-lookup-info">
+                ${imgHtml}
+                <div class="product-lookup-details">
+                    <span class="product-lookup-name">${this.escapeHtml(cachedProduct.name)}</span>
+                    ${brandHtml}${qtyHtml}
+                </div>
+            </div>`;
+        }
+
+        // Price suggestion hint
+        let priceSuggestionHtml = '';
+        if (priceSuggestion) {
+            const suggestedPrice = (priceSuggestion.unitPriceCents / 100).toFixed(2);
+            priceSuggestionHtml = `<div class="price-suggestion" data-price="${priceSuggestion.unitPriceCents}">
+                <span>${this.escapeHtml(i18n.t('shopping.price_suggestion', { price: suggestedPrice, store: store, date: priceSuggestion.observedAt }))}</span>
+                <button type="button" class="btn btn-secondary btn-small" id="useSuggestedPriceBtn">${this.escapeHtml(i18n.t('shopping.use_suggested_price'))}</button>
+            </div>`;
+        }
 
         return `<h3>${this.escapeHtml(title)}</h3>
         <form id="shoppingItemForm">
+            ${productInfoHtml}
             <div class="form-group">
                 <label for="itemName">${this.escapeHtml(i18n.t('shopping.item_name'))}</label>
                 <input type="text" id="itemName" value="${name}" required autocomplete="off">
@@ -1089,6 +1285,7 @@ class ShoppingListManager {
             </div>
 
             <div id="unitPriceFields" class="pricing-fields" style="display:${pricingMode === 'unit' ? 'block' : 'none'};">
+                ${priceSuggestionHtml}
                 <div class="form-group">
                     <label for="itemUnitPrice">${this.escapeHtml(i18n.t('shopping.unit_price'))}</label>
                     <input type="number" id="itemUnitPrice" value="${unitPrice}" step="0.01" min="0" inputmode="decimal">
@@ -1126,6 +1323,25 @@ class ShoppingListManager {
                 document.getElementById('weightPriceFields').style.display = mode === 'weight' ? 'block' : 'none';
             });
         });
+
+        // Use suggested price button
+        const useSuggBtn = document.getElementById('useSuggestedPriceBtn');
+        if (useSuggBtn) {
+            useSuggBtn.addEventListener('click', () => {
+                const hint = document.querySelector('.price-suggestion');
+                if (!hint) return;
+                const price = parseInt(hint.dataset.price, 10);
+                const priceInput = document.getElementById('itemUnitPrice');
+                if (priceInput) priceInput.value = (price / 100).toFixed(2);
+                // Ensure unit pricing mode is selected
+                const unitRadio = document.querySelector('input[name="pricingMode"][value="unit"]');
+                if (unitRadio) {
+                    unitRadio.checked = true;
+                    document.getElementById('unitPriceFields').style.display = 'block';
+                    document.getElementById('weightPriceFields').style.display = 'none';
+                }
+            });
+        }
 
         // Barcode scan
         const scanBtn = document.getElementById('scanItemBarcodeBtn');
@@ -1199,6 +1415,21 @@ class ShoppingListManager {
         } else {
             const item = this.addItem(listId, name, note);
             this.updateItem(listId, item.id, { pricingMode, barcode, unitPriceCents, quantity, pricePerKgCents, weightKg });
+        }
+
+        // Save price to product cache for future suggestions
+        if (barcode && pricingMode === 'unit' && unitPriceCents !== null) {
+            const list = this.getList(listId);
+            if (list && list.store) {
+                this.recordPriceForBarcode(barcode, list.store, unitPriceCents);
+            }
+        }
+        // Persist manually entered product name if not already cached
+        if (barcode && name) {
+            const existing = this.getProductFromCache(barcode);
+            if (!existing || !existing.name) {
+                this.saveProductToCache(barcode, { ...(existing || {}), name });
+            }
         }
 
         this.hideItemModal();
