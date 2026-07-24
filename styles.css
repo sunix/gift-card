@@ -809,6 +809,10 @@ h2 {
     transition: background 0.2s;
 }
 
+.shopping-item[draggable="true"] {
+    cursor: grab;
+}
+
 .shopping-item-checked {
     background: #f9fbe7;
     border-color: #c5e1a5;
@@ -965,6 +969,15 @@ h2 {
 .associated-card-balance {
     font-size: 0.9rem;
     color: #555;
+}
+
+button.associated-card-name,
+button.associated-card-balance {
+    border: none;
+    background: none;
+    padding: 0;
+    text-align: left;
+    cursor: pointer;
 }
 
 .associated-card-order {

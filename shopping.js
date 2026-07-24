@@ -15,6 +15,7 @@ class ShoppingListManager {
         this.isScanningBarcodeFrame = false;
         this.preferredBarcodeDetectorFormats = null;
         this.wakeLock = null;
+        this.draggedShoppingItemId = null;
     }
 
     // ===========================
@@ -216,9 +217,18 @@ class ShoppingListManager {
         return this.updateItem(listId, itemId, { checked });
     }
 
+    isValidItemReorder(list, fromIndex, toIndex) {
+        return !!list &&
+            fromIndex >= 0 &&
+            fromIndex < list.items.length &&
+            toIndex >= 0 &&
+            toIndex < list.items.length &&
+            fromIndex !== toIndex;
+    }
+
     reorderItems(listId, fromIndex, toIndex) {
         const list = this.getList(listId);
-        if (!list) return;
+        if (!this.isValidItemReorder(list, fromIndex, toIndex)) return;
         const [moved] = list.items.splice(fromIndex, 1);
         list.items.splice(toIndex, 0, moved);
         list.updatedAt = new Date().toISOString();
@@ -969,7 +979,7 @@ class ShoppingListManager {
             const total = item.totalCents ? this.formatCents(item.totalCents) : '—';
             const priceInfo = this.getItemPriceDisplay(item);
 
-            return `<div class="shopping-item ${checkedClass}" data-item-id="${this.escapeHtml(item.id)}">
+            return `<div class="shopping-item ${checkedClass}" data-item-id="${this.escapeHtml(item.id)}" data-item-index="${index}" draggable="true">
                 <button class="shopping-item-check btn-icon" data-action="check-item" data-item-id="${this.escapeHtml(item.id)}" data-checked="${item.checked}" aria-label="${this.escapeHtml(item.checked ? i18n.t('shopping.mark_not_found') : i18n.t('shopping.mark_found'))}" title="${this.escapeHtml(item.checked ? i18n.t('shopping.mark_not_found') : i18n.t('shopping.mark_found'))}">${checkedIcon}</button>
                 <div class="shopping-item-info">
                     <span class="shopping-item-name">${this.escapeHtml(item.name)}</span>
@@ -981,6 +991,7 @@ class ShoppingListManager {
                         <span class="shopping-item-total">${this.escapeHtml(total)}</span>
                     </div>
                     <div class="shopping-item-actions">
+                        <button class="btn btn-secondary btn-icon" data-action="scan-item-barcode" data-item-id="${this.escapeHtml(item.id)}" aria-label="${this.escapeHtml(i18n.t('form.scan_barcode_camera'))}" title="${this.escapeHtml(i18n.t('form.scan_barcode_camera'))}">📷</button>
                         <button class="btn btn-secondary btn-icon" data-action="edit-item" data-item-id="${this.escapeHtml(item.id)}" aria-label="${this.escapeHtml(i18n.t('shopping.edit_item'))}" title="${this.escapeHtml(i18n.t('shopping.edit_item'))}">✏️</button>
                         <button class="btn btn-danger btn-icon" data-action="remove-item" data-item-id="${this.escapeHtml(item.id)}" aria-label="${this.escapeHtml(i18n.t('shopping.remove_item'))}" title="${this.escapeHtml(i18n.t('shopping.remove_item'))}">🗑️</button>
                     </div>
@@ -1012,8 +1023,8 @@ class ShoppingListManager {
                 const name = card ? this.escapeHtml(card.name) : this.escapeHtml(i18n.t('shopping.card_not_found'));
                 const balance = card ? this.escapeHtml('€' + (card.currentBalance || 0).toFixed(2)) : '—';
                 html += `<div class="associated-card-item">
-                    <span class="associated-card-name">${name}</span>
-                    <span class="associated-card-balance">${balance}</span>
+                    <button class="associated-card-name" type="button" data-action="open-card" data-card-id="${this.escapeHtml(cardId)}">${name}</button>
+                    <button class="associated-card-balance" type="button" data-action="open-card" data-card-id="${this.escapeHtml(cardId)}">${balance}</button>
                     <div class="associated-card-order">
                         ${index > 0 ? `<button class="btn btn-secondary btn-icon" data-action="move-gift-card-up" data-card-id="${this.escapeHtml(cardId)}" data-index="${index}" aria-label="${this.escapeHtml(i18n.t('shopping.move_up'))}" title="${this.escapeHtml(i18n.t('shopping.move_up'))}">↑</button>` : '<span class="btn-icon-placeholder"></span>'}
                         ${index < list.giftCardIds.length - 1 ? `<button class="btn btn-secondary btn-icon" data-action="move-gift-card-down" data-card-id="${this.escapeHtml(cardId)}" data-index="${index}" aria-label="${this.escapeHtml(i18n.t('shopping.move_down'))}" title="${this.escapeHtml(i18n.t('shopping.move_down'))}">↓</button>` : '<span class="btn-icon-placeholder"></span>'}
@@ -1031,7 +1042,7 @@ class ShoppingListManager {
                 const card = this.getCardInfo(cardId);
                 const name = card ? this.escapeHtml(card.name) : this.escapeHtml(i18n.t('shopping.card_not_found'));
                 html += `<div class="associated-card-item">
-                    <span class="associated-card-name">${name}</span>
+                    <button class="associated-card-name" type="button" data-action="open-card" data-card-id="${this.escapeHtml(cardId)}">${name}</button>
                     <button class="btn btn-danger btn-icon" data-action="remove-loyalty-card" data-card-id="${this.escapeHtml(cardId)}" aria-label="${this.escapeHtml(i18n.t('shopping.remove_card'))}" title="${this.escapeHtml(i18n.t('shopping.remove_card'))}">✕</button>
                 </div>`;
             });
@@ -1079,6 +1090,10 @@ class ShoppingListManager {
                     const checked = btn.dataset.checked === 'true';
                     this.checkItem(listId, itemId, !checked);
                     this.renderListDetail(listId);
+                } else if (action === 'scan-item-barcode') {
+                    this.pendingItemScanListId = listId;
+                    this.pendingItemScanItemId = itemId;
+                    this.startItemBarcodeScan(listId, itemId);
                 } else if (action === 'edit-item') {
                     this.showEditItemModal(listId, itemId);
                 } else if (action === 'remove-item') {
@@ -1087,6 +1102,44 @@ class ShoppingListManager {
                         this.renderListDetail(listId);
                     }
                 }
+            });
+
+            itemsList.addEventListener('dragstart', e => {
+                const item = e.target.closest('.shopping-item');
+                if (!item) return;
+                this.draggedShoppingItemId = item.dataset.itemId;
+                if (e.dataTransfer) {
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', item.dataset.itemId);
+                }
+            });
+
+            itemsList.addEventListener('dragover', e => {
+                if (!this.draggedShoppingItemId) return;
+                const item = e.target.closest('.shopping-item');
+                if (!item || item.dataset.itemId === this.draggedShoppingItemId) return;
+                e.preventDefault();
+            });
+
+            itemsList.addEventListener('drop', e => {
+                const item = e.target.closest('.shopping-item');
+                if (!item || !this.draggedShoppingItemId) return;
+                e.preventDefault();
+                const currentList = this.getList(listId);
+                if (!currentList) return;
+                const fromIndex = currentList.items.findIndex(entry => entry.id === this.draggedShoppingItemId);
+                const toIndex = parseInt(item.dataset.itemIndex, 10);
+                if (!this.isValidItemReorder(currentList, fromIndex, toIndex)) {
+                    this.draggedShoppingItemId = null;
+                    return;
+                }
+                this.draggedShoppingItemId = null;
+                this.reorderItems(listId, fromIndex, toIndex);
+                this.renderListDetail(listId);
+            });
+
+            itemsList.addEventListener('dragend', () => {
+                this.draggedShoppingItemId = null;
             });
         }
 
@@ -1116,7 +1169,11 @@ class ShoppingListManager {
                 const cardId = btn.dataset.cardId;
                 const idx = parseInt(btn.dataset.index, 10);
 
-                if (action === 'remove-gift-card') {
+                if (action === 'open-card') {
+                    if (this.cardManager && typeof this.cardManager.showCardDetail === 'function') {
+                        this.cardManager.showCardDetail(cardId);
+                    }
+                } else if (action === 'remove-gift-card') {
                     this.removeGiftCard(listId, cardId);
                     this.renderListDetail(listId);
                 } else if (action === 'remove-loyalty-card') {

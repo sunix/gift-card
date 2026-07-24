@@ -83,6 +83,7 @@ const i18nMock = {
             'shopping.final_total': 'Final Total:',
             'shopping.payment_breakdown': 'Payment Breakdown',
             'shopping.confirm_and_update': 'Confirm & Update',
+            'form.scan_barcode_camera': 'Scan with Camera',
             'form.barcode_camera_unsupported': 'Camera not supported.',
             'form.barcode_camera_ready': 'Point camera at barcode.',
             'form.barcode_image_processing': 'Reading barcode...',
@@ -1204,6 +1205,91 @@ describe('ShoppingListManager', () => {
             setupItemFormDOM({ name: 'My custom name', barcode: '3017620422003', unitPrice: '' });
             manager.handleItemFormSubmit(list.id, null);
             expect(manager.getProductFromCache('3017620422003').name).toBe('Nutella');
+        });
+    });
+
+    // =====================
+    // list detail interactions
+    // =====================
+    describe('list detail interactions', () => {
+        function setupListDetailDOM() {
+            document.body.innerHTML = '<div id="shoppingListDetailContent"></div>';
+        }
+
+        afterEach(() => {
+            document.body.innerHTML = '';
+        });
+
+        test('associated card buttons open the existing card detail UI', () => {
+            const cardManager = makeMockCardManager([
+                { id: 'gift-1', name: 'Gift Card', number: '111', initialBalance: 25, currentBalance: 12.5 },
+                { id: 'loyalty-1', name: 'Loyalty Card', number: '222', initialBalance: null, currentBalance: null }
+            ]);
+            cardManager.showCardDetail = jest.fn();
+            manager = new ShoppingListManager(cardManager);
+
+            const list = manager.createList('Weekly', '', null);
+            manager.addGiftCard(list.id, 'gift-1');
+            manager.addLoyaltyCard(list.id, 'loyalty-1');
+
+            setupListDetailDOM();
+            manager.renderListDetail(list.id);
+
+            const buttons = document.querySelectorAll('[data-action="open-card"]');
+            buttons[0].click();
+            buttons[buttons.length - 1].click();
+
+            expect(cardManager.showCardDetail).toHaveBeenNthCalledWith(1, 'gift-1');
+            expect(cardManager.showCardDetail).toHaveBeenNthCalledWith(2, 'loyalty-1');
+        });
+
+        test('scan button starts barcode scanning directly from the list', () => {
+            setupListDetailDOM();
+            const list = manager.createList('Weekly', '', null);
+            const item = manager.addItem(list.id, 'Milk', '');
+            manager.startItemBarcodeScan = jest.fn();
+
+            manager.renderListDetail(list.id);
+
+            document.querySelector('[data-action="scan-item-barcode"]').click();
+
+            expect(manager.pendingItemScanListId).toBe(list.id);
+            expect(manager.pendingItemScanItemId).toBe(item.id);
+            expect(manager.startItemBarcodeScan).toHaveBeenCalledWith(list.id, item.id);
+        });
+
+        test('drag and drop reorders shopping list items', () => {
+            setupListDetailDOM();
+            const list = manager.createList('Weekly', '', null);
+            manager.addItem(list.id, 'Apples', '');
+            manager.addItem(list.id, 'Bread', '');
+            manager.addItem(list.id, 'Carrots', '');
+
+            manager.renderListDetail(list.id);
+
+            const items = document.querySelectorAll('.shopping-item');
+            items[0].dispatchEvent(new Event('dragstart', { bubbles: true }));
+            items[2].dispatchEvent(new Event('dragover', { bubbles: true, cancelable: true }));
+            items[2].dispatchEvent(new Event('drop', { bubbles: true, cancelable: true }));
+
+            expect(manager.getList(list.id).items.map(item => item.name)).toEqual(['Bread', 'Carrots', 'Apples']);
+            expect(manager.draggedShoppingItemId).toBeNull();
+        });
+
+        test('dragend clears any pending dragged item state', () => {
+            setupListDetailDOM();
+            const list = manager.createList('Weekly', '', null);
+            manager.addItem(list.id, 'Apples', '');
+            manager.addItem(list.id, 'Bread', '');
+
+            manager.renderListDetail(list.id);
+
+            const firstItem = document.querySelector('.shopping-item');
+            firstItem.dispatchEvent(new Event('dragstart', { bubbles: true }));
+            expect(manager.draggedShoppingItemId).toBeTruthy();
+
+            firstItem.dispatchEvent(new Event('dragend', { bubbles: true }));
+            expect(manager.draggedShoppingItemId).toBeNull();
         });
     });
 });
