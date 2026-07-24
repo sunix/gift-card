@@ -953,14 +953,14 @@ describe('ShoppingListManager', () => {
     // buildProductNote
     // =====================
     describe('buildProductNote', () => {
-        test('returns all non-null fields joined by comma', () => {
+        test('returns brand, quantity, category joined by comma (excludes name)', () => {
             const note = manager.buildProductNote({ name: 'Nutella', brand: 'Ferrero', quantity: '400 g', category: 'en:spreads' });
-            expect(note).toBe('Nutella, Ferrero, 400 g, en:spreads');
+            expect(note).toBe('Ferrero, 400 g, en:spreads');
         });
 
         test('skips null and undefined fields', () => {
             const note = manager.buildProductNote({ name: 'Milk', brand: null, quantity: '1 L', category: undefined });
-            expect(note).toBe('Milk, 1 L');
+            expect(note).toBe('1 L');
         });
 
         test('returns empty string for null product', () => {
@@ -1095,8 +1095,8 @@ describe('ShoppingListManager', () => {
             const item = manager.addItem(list.id, '', '');
             await manager.applyBarcodeToItem(list.id, item.id, '3017620422003', 'EAN13');
             const updated = manager.getList(list.id).items[0];
-            expect(updated.name).toBe('Nutella — Ferrero');
-            expect(updated.note).toBe('Nutella, Ferrero, 400 g');
+            expect(updated.name).toBe('Nutella');
+            expect(updated.note).toBe('Ferrero, 400 g');
         });
 
         test('appends product name and note to existing item values', async () => {
@@ -1111,8 +1111,8 @@ describe('ShoppingListManager', () => {
             const item = manager.addItem(list.id, 'My Custom Name', 'My note');
             await manager.applyBarcodeToItem(list.id, item.id, '3017620422003', 'EAN13');
             const updated = manager.getList(list.id).items[0];
-            expect(updated.name).toBe('My Custom Name | Nutella — Ferrero');
-            expect(updated.note).toBe('My note; Nutella, Ferrero, 400 g');
+            expect(updated.name).toBe('My Custom Name | Nutella');
+            expect(updated.note).toBe('My note; Ferrero, 400 g');
         });
 
         test('stores pending product info and opens add modal for __new__ item', async () => {

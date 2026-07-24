@@ -858,30 +858,37 @@ h2 {
     font-style: italic;
 }
 
-.shopping-item-barcode {
-    font-size: 0.8rem;
-    color: #888;
-    font-family: monospace;
-}
-
 .shopping-item-price {
     font-size: 0.85rem;
     color: #555;
+}
+
+.shopping-item-side {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex-shrink: 0;
+    gap: 0.35rem;
+}
+
+.shopping-item-price-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+    white-space: nowrap;
 }
 
 .shopping-item-total {
     font-weight: 700;
     font-size: 1rem;
     color: #333;
-    flex-shrink: 0;
-    text-align: right;
-    min-width: 60px;
 }
 
 .shopping-item-actions {
     display: flex;
     gap: 0.25rem;
     flex-shrink: 0;
+    justify-content: flex-end;
 }
 
 /* Icon buttons */
@@ -1246,12 +1253,8 @@ h2 {
         flex-wrap: wrap;
     }
 
-    .shopping-item-actions {
-        order: 3;
-    }
-
-    .shopping-item-total {
-        order: 2;
+    .shopping-item-side {
+        flex-shrink: 0;
     }
 
     .shopping-summary-bar {

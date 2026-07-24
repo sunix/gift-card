@@ -619,9 +619,8 @@ class ShoppingListManager {
                 const item = list && list.items.find(it => it.id === itemId);
                 if (item) {
                     const updates = {};
-                    const productName = [product.name, product.brand].filter(Boolean).join(' — ');
-                    if (productName) {
-                        updates.name = item.name ? item.name + ' | ' + productName : productName;
+                    if (product.name) {
+                        updates.name = item.name ? item.name + ' | ' + product.name : product.name;
                     }
                     const productNote = this.buildProductNote(product);
                     if (productNote) {
@@ -664,7 +663,7 @@ class ShoppingListManager {
 
     buildProductNote(product) {
         if (!product) return '';
-        return [product.name, product.brand, product.quantity, product.category]
+        return [product.brand, product.quantity, product.category]
             .filter(Boolean)
             .join(', ');
     }
@@ -975,13 +974,16 @@ class ShoppingListManager {
                 <div class="shopping-item-info">
                     <span class="shopping-item-name">${this.escapeHtml(item.name)}</span>
                     ${item.note ? `<span class="shopping-item-note">${this.escapeHtml(item.note)}</span>` : ''}
-                    ${item.barcode ? `<span class="shopping-item-barcode">🔖 ${this.escapeHtml(item.barcode)}</span>` : ''}
-                    <span class="shopping-item-price">${this.escapeHtml(priceInfo)}</span>
                 </div>
-                <div class="shopping-item-total">${this.escapeHtml(total)}</div>
-                <div class="shopping-item-actions">
-                    <button class="btn btn-secondary btn-icon" data-action="edit-item" data-item-id="${this.escapeHtml(item.id)}" aria-label="${this.escapeHtml(i18n.t('shopping.edit_item'))}" title="${this.escapeHtml(i18n.t('shopping.edit_item'))}">✏️</button>
-                    <button class="btn btn-danger btn-icon" data-action="remove-item" data-item-id="${this.escapeHtml(item.id)}" aria-label="${this.escapeHtml(i18n.t('shopping.remove_item'))}" title="${this.escapeHtml(i18n.t('shopping.remove_item'))}">🗑️</button>
+                <div class="shopping-item-side">
+                    <div class="shopping-item-price-row">
+                        <span class="shopping-item-price">${this.escapeHtml(priceInfo)}</span>
+                        <span class="shopping-item-total">${this.escapeHtml(total)}</span>
+                    </div>
+                    <div class="shopping-item-actions">
+                        <button class="btn btn-secondary btn-icon" data-action="edit-item" data-item-id="${this.escapeHtml(item.id)}" aria-label="${this.escapeHtml(i18n.t('shopping.edit_item'))}" title="${this.escapeHtml(i18n.t('shopping.edit_item'))}">✏️</button>
+                        <button class="btn btn-danger btn-icon" data-action="remove-item" data-item-id="${this.escapeHtml(item.id)}" aria-label="${this.escapeHtml(i18n.t('shopping.remove_item'))}" title="${this.escapeHtml(i18n.t('shopping.remove_item'))}">🗑️</button>
+                    </div>
                 </div>
             </div>`;
         }).join('');
@@ -1219,7 +1221,7 @@ class ShoppingListManager {
         const title = isEdit ? i18n.t('shopping.edit_item_title') : i18n.t('shopping.add_item_title');
 
         const name = item ? this.escapeHtml(item.name)
-            : (prefill && prefill.name ? this.escapeHtml([prefill.name, prefill.brand].filter(Boolean).join(' — ')) : '');
+            : (prefill && prefill.name ? this.escapeHtml(prefill.name) : '');
         const note = item ? this.escapeHtml(item.note || '')
             : (prefill ? this.escapeHtml(this.buildProductNote(prefill)) : '');
         const pricingMode = item ? item.pricingMode : 'unit';
