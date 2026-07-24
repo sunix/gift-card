@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gift-card-manager-v2.2.0';
+const CACHE_NAME = 'gift-card-manager-v2.3.0';
 const NETWORK_TIMEOUT_MS = 4000; // 4 seconds timeout for network requests
 
 // HTML error page template for navigation failures
@@ -11,6 +11,7 @@ const urlsToCache = [
   './app.js',
   './barcode.js',
   './i18n.js',
+  './shopping.js',
   // i18n language files - update this list when adding/removing languages
   './i18n/en.json',
   './i18n/fr.json',
