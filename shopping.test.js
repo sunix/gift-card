@@ -1273,6 +1273,23 @@ describe('ShoppingListManager', () => {
             items[2].dispatchEvent(new Event('drop', { bubbles: true, cancelable: true }));
 
             expect(manager.getList(list.id).items.map(item => item.name)).toEqual(['Bread', 'Carrots', 'Apples']);
+            expect(manager.draggedShoppingItemId).toBeNull();
+        });
+
+        test('dragend clears any pending dragged item state', () => {
+            setupListDetailDOM();
+            const list = manager.createList('Weekly', '', null);
+            manager.addItem(list.id, 'Apples', '');
+            manager.addItem(list.id, 'Bread', '');
+
+            manager.renderListDetail(list.id);
+
+            const firstItem = document.querySelector('.shopping-item');
+            firstItem.dispatchEvent(new Event('dragstart', { bubbles: true }));
+            expect(manager.draggedShoppingItemId).toBeTruthy();
+
+            firstItem.dispatchEvent(new Event('dragend', { bubbles: true }));
+            expect(manager.draggedShoppingItemId).toBeNull();
         });
     });
 });

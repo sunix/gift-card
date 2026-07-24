@@ -1107,6 +1107,7 @@ class ShoppingListManager {
             itemsList.addEventListener('dragstart', e => {
                 const item = e.target.closest('.shopping-item');
                 if (!item) return;
+                this.draggedShoppingItemId = null;
                 this.draggedShoppingItemId = item.dataset.itemId;
                 if (e.dataTransfer) {
                     e.dataTransfer.effectAllowed = 'move';
@@ -1116,7 +1117,8 @@ class ShoppingListManager {
 
             itemsList.addEventListener('dragover', e => {
                 if (!this.draggedShoppingItemId) return;
-                if (!e.target.closest('.shopping-item')) return;
+                const item = e.target.closest('.shopping-item');
+                if (!item || item.dataset.itemId === this.draggedShoppingItemId) return;
                 e.preventDefault();
             });
 
