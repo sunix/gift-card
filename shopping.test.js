@@ -1111,8 +1111,8 @@ describe('ShoppingListManager', () => {
             const item = manager.addItem(list.id, 'My Custom Name', 'My note');
             await manager.applyBarcodeToItem(list.id, item.id, '3017620422003', 'EAN13');
             const updated = manager.getList(list.id).items[0];
-            expect(updated.name).toBe('My Custom Name, Nutella — Ferrero');
-            expect(updated.note).toBe('My note, Nutella, Ferrero, 400 g');
+            expect(updated.name).toBe('My Custom Name | Nutella — Ferrero');
+            expect(updated.note).toBe('My note; Nutella, Ferrero, 400 g');
         });
 
         test('stores pending product info and opens add modal for __new__ item', async () => {

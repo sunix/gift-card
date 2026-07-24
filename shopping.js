@@ -621,11 +621,11 @@ class ShoppingListManager {
                     const updates = {};
                     const productName = [product.name, product.brand].filter(Boolean).join(' — ');
                     if (productName) {
-                        updates.name = item.name ? item.name + ', ' + productName : productName;
+                        updates.name = item.name ? item.name + ' | ' + productName : productName;
                     }
                     const productNote = this.buildProductNote(product);
                     if (productNote) {
-                        updates.note = item.note ? item.note + ', ' + productNote : productNote;
+                        updates.note = item.note ? item.note + '; ' + productNote : productNote;
                     }
                     if (Object.keys(updates).length > 0) {
                         this.updateItem(listId, itemId, updates);
