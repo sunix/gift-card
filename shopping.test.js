@@ -950,6 +950,29 @@ describe('ShoppingListManager', () => {
     });
 
     // =====================
+    // buildProductNote
+    // =====================
+    describe('buildProductNote', () => {
+        test('returns all non-null fields joined by comma', () => {
+            const note = manager.buildProductNote({ name: 'Nutella', brand: 'Ferrero', quantity: '400 g', category: 'en:spreads' });
+            expect(note).toBe('Nutella, Ferrero, 400 g, en:spreads');
+        });
+
+        test('skips null and undefined fields', () => {
+            const note = manager.buildProductNote({ name: 'Milk', brand: null, quantity: '1 L', category: undefined });
+            expect(note).toBe('Milk, 1 L');
+        });
+
+        test('returns empty string for null product', () => {
+            expect(manager.buildProductNote(null)).toBe('');
+        });
+
+        test('returns empty string when all fields are null', () => {
+            expect(manager.buildProductNote({ name: null, brand: null, quantity: null, category: null })).toBe('');
+        });
+    });
+
+    // =====================
     // lookupProductInfo
     // =====================
     describe('lookupProductInfo', () => {
@@ -1073,22 +1096,23 @@ describe('ShoppingListManager', () => {
             await manager.applyBarcodeToItem(list.id, item.id, '3017620422003', 'EAN13');
             const updated = manager.getList(list.id).items[0];
             expect(updated.name).toBe('Nutella — Ferrero');
-            expect(updated.note).toBe('400 g');
+            expect(updated.note).toBe('Nutella, Ferrero, 400 g');
         });
 
-        test('does not overwrite existing item name', async () => {
+        test('appends product name and note to existing item values', async () => {
             global.fetch = jest.fn().mockResolvedValue({
                 ok: true,
                 json: async () => ({
                     status: 1,
-                    product: { product_name: 'Nutella', brands: 'Ferrero' }
+                    product: { product_name: 'Nutella', brands: 'Ferrero', quantity: '400 g' }
                 })
             });
             const list = manager.createList('List', '', null);
-            const item = manager.addItem(list.id, 'My Custom Name', '');
+            const item = manager.addItem(list.id, 'My Custom Name', 'My note');
             await manager.applyBarcodeToItem(list.id, item.id, '3017620422003', 'EAN13');
             const updated = manager.getList(list.id).items[0];
-            expect(updated.name).toBe('My Custom Name');
+            expect(updated.name).toBe('My Custom Name, Nutella — Ferrero');
+            expect(updated.note).toBe('My note, Nutella, Ferrero, 400 g');
         });
 
         test('stores pending product info and opens add modal for __new__ item', async () => {

@@ -619,11 +619,14 @@ class ShoppingListManager {
                 const item = list && list.items.find(it => it.id === itemId);
                 if (item) {
                     const updates = {};
-                    if (!item.name) {
-                        const productName = [product.name, product.brand].filter(Boolean).join(' — ');
-                        if (productName) updates.name = productName;
+                    const productName = [product.name, product.brand].filter(Boolean).join(' — ');
+                    if (productName) {
+                        updates.name = item.name ? item.name + ', ' + productName : productName;
                     }
-                    if (!item.note && product.quantity) updates.note = product.quantity;
+                    const productNote = this.buildProductNote(product);
+                    if (productNote) {
+                        updates.note = item.note ? item.note + ', ' + productNote : productNote;
+                    }
                     if (Object.keys(updates).length > 0) {
                         this.updateItem(listId, itemId, updates);
                         this.renderListDetail(listId);
@@ -658,6 +661,13 @@ class ShoppingListManager {
     // ===========================
     // Product Lookup
     // ===========================
+
+    buildProductNote(product) {
+        if (!product) return '';
+        return [product.name, product.brand, product.quantity, product.category]
+            .filter(Boolean)
+            .join(', ');
+    }
 
     async fetchOpenFoodFacts(barcode) {
         try {
@@ -1211,7 +1221,7 @@ class ShoppingListManager {
         const name = item ? this.escapeHtml(item.name)
             : (prefill && prefill.name ? this.escapeHtml([prefill.name, prefill.brand].filter(Boolean).join(' — ')) : '');
         const note = item ? this.escapeHtml(item.note || '')
-            : (prefill && prefill.quantity ? this.escapeHtml(prefill.quantity) : '');
+            : (prefill ? this.escapeHtml(this.buildProductNote(prefill)) : '');
         const pricingMode = item ? item.pricingMode : 'unit';
         const unitPrice = item && item.unitPriceCents !== null ? (item.unitPriceCents / 100).toFixed(2) : '';
         const qty = item ? (item.quantity !== null ? item.quantity : 1) : 1;
