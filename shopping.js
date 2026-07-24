@@ -220,8 +220,7 @@ class ShoppingListManager {
     reorderItems(listId, fromIndex, toIndex) {
         const list = this.getList(listId);
         if (!list) return;
-        if (fromIndex < 0 || fromIndex >= list.items.length) return;
-        if (toIndex < 0 || toIndex >= list.items.length || fromIndex === toIndex) return;
+        if (fromIndex < 0 || fromIndex >= list.items.length || toIndex < 0 || toIndex >= list.items.length || fromIndex === toIndex) return;
         const [moved] = list.items.splice(fromIndex, 1);
         list.items.splice(toIndex, 0, moved);
         list.updatedAt = new Date().toISOString();
@@ -1103,7 +1102,7 @@ class ShoppingListManager {
                 this.draggedShoppingItemId = item.dataset.itemId;
                 if (e.dataTransfer) {
                     e.dataTransfer.effectAllowed = 'move';
-                    e.dataTransfer.setData('text/plain', item.dataset.itemId || '');
+                    e.dataTransfer.setData('text/plain', item.dataset.itemId);
                 }
             });
 
