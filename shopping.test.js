@@ -1037,4 +1037,149 @@ describe('ShoppingListManager', () => {
             expect(result.source).toBe('openproductsfacts');
         });
     });
+
+    // =====================
+    // applyBarcodeToItem (business logic)
+    // =====================
+    describe('applyBarcodeToItem', () => {
+        beforeEach(() => {
+            global.fetch = undefined;
+            // Stub DOM methods used by applyBarcodeToItem
+            manager.renderListDetail = jest.fn();
+            manager.updateScanStatus = jest.fn();
+            manager.showAddItemModal = jest.fn();
+        });
+
+        test('sets barcode on existing item', async () => {
+            global.fetch = jest.fn().mockRejectedValue(new Error('offline'));
+            const list = manager.createList('List', 'Lidl', null);
+            const item = manager.addItem(list.id, 'Unnamed', '');
+            await manager.applyBarcodeToItem(list.id, item.id, '3017620422003', 'EAN13');
+            const updated = manager.getList(list.id).items[0];
+            expect(updated.barcode).toBe('3017620422003');
+            expect(updated.barcodeFormat).toBe('EAN13');
+        });
+
+        test('prefills item name and note from product lookup', async () => {
+            global.fetch = jest.fn().mockResolvedValue({
+                ok: true,
+                json: async () => ({
+                    status: 1,
+                    product: { product_name: 'Nutella', brands: 'Ferrero', quantity: '400 g' }
+                })
+            });
+            const list = manager.createList('List', 'Super U', null);
+            const item = manager.addItem(list.id, '', '');
+            await manager.applyBarcodeToItem(list.id, item.id, '3017620422003', 'EAN13');
+            const updated = manager.getList(list.id).items[0];
+            expect(updated.name).toBe('Nutella — Ferrero');
+            expect(updated.note).toBe('400 g');
+        });
+
+        test('does not overwrite existing item name', async () => {
+            global.fetch = jest.fn().mockResolvedValue({
+                ok: true,
+                json: async () => ({
+                    status: 1,
+                    product: { product_name: 'Nutella', brands: 'Ferrero' }
+                })
+            });
+            const list = manager.createList('List', '', null);
+            const item = manager.addItem(list.id, 'My Custom Name', '');
+            await manager.applyBarcodeToItem(list.id, item.id, '3017620422003', 'EAN13');
+            const updated = manager.getList(list.id).items[0];
+            expect(updated.name).toBe('My Custom Name');
+        });
+
+        test('stores pending product info and opens add modal for __new__ item', async () => {
+            global.fetch = jest.fn().mockResolvedValue({
+                ok: true,
+                json: async () => ({
+                    status: 1,
+                    product: { product_name: 'Milk', brands: 'Lactel', quantity: '1 L' }
+                })
+            });
+            const list = manager.createList('List', '', null);
+            await manager.applyBarcodeToItem(list.id, '__new__', '1234567890', 'EAN13');
+            expect(manager.showAddItemModal).toHaveBeenCalledWith(list.id);
+            // pendingProductInfo is set before showAddItemModal is called
+            // (in the real flow showAddItemModal consumes and clears it; mock leaves it intact)
+            expect(manager.pendingProductInfo).toMatchObject({
+                barcode: '1234567890',
+                barcodeFormat: 'EAN13',
+                name: 'Milk',
+                brand: 'Lactel'
+            });
+        });
+
+        test('handles offline gracefully for existing item', async () => {
+            global.fetch = jest.fn().mockRejectedValue(new Error('offline'));
+            const list = manager.createList('List', '', null);
+            const item = manager.addItem(list.id, 'Existing', '');
+            await expect(
+                manager.applyBarcodeToItem(list.id, item.id, '999', 'EAN13')
+            ).resolves.not.toThrow();
+            const updated = manager.getList(list.id).items[0];
+            expect(updated.barcode).toBe('999');
+        });
+    });
+
+    // =====================
+    // handleItemFormSubmit – price cache integration
+    // =====================
+    describe('handleItemFormSubmit price cache', () => {
+        function setupItemFormDOM({ name = 'Nutella', note = '', barcode = '3017620422003',
+            pricingMode = 'unit', unitPrice = '3.49', quantity = '1' } = {}) {
+            document.body.innerHTML = `
+                <input id="itemName" value="${name}">
+                <input id="itemNote" value="${note}">
+                <input id="itemBarcode" value="${barcode}">
+                <input type="radio" name="pricingMode" value="unit" ${pricingMode === 'unit' ? 'checked' : ''}>
+                <input type="radio" name="pricingMode" value="weight" ${pricingMode === 'weight' ? 'checked' : ''}>
+                <input id="itemUnitPrice" value="${unitPrice}">
+                <input id="itemQuantity" value="${quantity}">
+                <input id="itemPricePerKg" value="">
+                <input id="itemWeight" value="">
+                <div id="shoppingItemModal"></div>
+            `;
+            manager.renderListDetail = jest.fn();
+        }
+
+        afterEach(() => {
+            document.body.innerHTML = '';
+        });
+
+        test('saves unit price and store to product cache on submit', () => {
+            const list = manager.createList('Week', 'Super U', null);
+            setupItemFormDOM({ barcode: '3017620422003', unitPrice: '3.49' });
+            manager.handleItemFormSubmit(list.id, null);
+            const suggestion = manager.getSuggestedPriceForStore('3017620422003', 'Super U');
+            expect(suggestion).not.toBeNull();
+            expect(suggestion.unitPriceCents).toBe(349);
+        });
+
+        test('does not save price when store is empty', () => {
+            const list = manager.createList('Week', '', null);
+            setupItemFormDOM({ barcode: '3017620422003', unitPrice: '3.49' });
+            manager.handleItemFormSubmit(list.id, null);
+            expect(manager.getSuggestedPriceForStore('3017620422003', '')).toBeNull();
+        });
+
+        test('saves product name to cache when not already cached', () => {
+            const list = manager.createList('Week', '', null);
+            setupItemFormDOM({ name: 'Nutella', barcode: '3017620422003', unitPrice: '' });
+            manager.handleItemFormSubmit(list.id, null);
+            const cached = manager.getProductFromCache('3017620422003');
+            expect(cached).not.toBeNull();
+            expect(cached.name).toBe('Nutella');
+        });
+
+        test('does not overwrite existing cached product name', () => {
+            manager.saveProductToCache('3017620422003', { name: 'Nutella', brand: 'Ferrero' });
+            const list = manager.createList('Week', '', null);
+            setupItemFormDOM({ name: 'My custom name', barcode: '3017620422003', unitPrice: '' });
+            manager.handleItemFormSubmit(list.id, null);
+            expect(manager.getProductFromCache('3017620422003').name).toBe('Nutella');
+        });
+    });
 });
