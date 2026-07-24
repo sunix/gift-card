@@ -572,6 +572,7 @@ class ShoppingListManager {
             const img = await this.loadImageFromFile(file);
             const result = await this.detectBarcodeFromSource(img);
             if (result) {
+                // applyBarcodeToItem handles all subsequent status updates (lookup + result)
                 await this.applyBarcodeToItem(listId, itemId, result.rawValue, this.mapDetectedBarcodeFormat(result.format));
             } else {
                 this.updateScanStatus(i18n.t('alert.barcode_not_found'), 'error');

@@ -1174,7 +1174,7 @@ describe('ShoppingListManager', () => {
             expect(cached.name).toBe('Nutella');
         });
 
-        test('does not overwrite existing cached product name', () => {
+        test('does not overwrite existing cached product name with user-entered name', () => {
             manager.saveProductToCache('3017620422003', { name: 'Nutella', brand: 'Ferrero' });
             const list = manager.createList('Week', '', null);
             setupItemFormDOM({ name: 'My custom name', barcode: '3017620422003', unitPrice: '' });
