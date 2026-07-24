@@ -217,10 +217,18 @@ class ShoppingListManager {
         return this.updateItem(listId, itemId, { checked });
     }
 
+    isValidItemReorder(list, fromIndex, toIndex) {
+        return !!list &&
+            fromIndex >= 0 &&
+            fromIndex < list.items.length &&
+            toIndex >= 0 &&
+            toIndex < list.items.length &&
+            fromIndex !== toIndex;
+    }
+
     reorderItems(listId, fromIndex, toIndex) {
         const list = this.getList(listId);
-        if (!list) return;
-        if (fromIndex < 0 || fromIndex >= list.items.length || toIndex < 0 || toIndex >= list.items.length || fromIndex === toIndex) return;
+        if (!this.isValidItemReorder(list, fromIndex, toIndex)) return;
         const [moved] = list.items.splice(fromIndex, 1);
         list.items.splice(toIndex, 0, moved);
         list.updatedAt = new Date().toISOString();
@@ -1120,9 +1128,11 @@ class ShoppingListManager {
                 if (!currentList) return;
                 const fromIndex = currentList.items.findIndex(entry => entry.id === this.draggedShoppingItemId);
                 const toIndex = parseInt(item.dataset.itemIndex, 10);
-                if (Number.isNaN(toIndex)) return;
+                if (!this.isValidItemReorder(currentList, fromIndex, toIndex)) {
+                    this.draggedShoppingItemId = null;
+                    return;
+                }
                 this.draggedShoppingItemId = null;
-                if (fromIndex === toIndex) return;
                 this.reorderItems(listId, fromIndex, toIndex);
                 this.renderListDetail(listId);
             });
