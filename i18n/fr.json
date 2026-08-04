@@ -58,7 +58,7 @@
   "export.description": "Exportez vos données en tant que sauvegarde ou importez des données précédemment exportées.",
   
   "receipt.upload_button": "📄 Télécharger Ticket (PDF)",
-  "receipt.description": "Téléchargez un ticket PDF pour extraire et ajouter automatiquement les transactions à vos cartes cadeaux.",
+  "receipt.description": "Téléchargez un ou plusieurs tickets PDF pour extraire et ajouter automatiquement les transactions à vos cartes cadeaux.",
   "receipt.processing": "Traitement du ticket PDF...",
   "receipt.success": "Ajout réussi de {count} transaction(s) depuis le ticket",
   "receipt.no_transactions": "Aucune transaction de carte cadeau trouvée dans le ticket",

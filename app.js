@@ -1240,17 +1240,22 @@ class GiftCardManager {
         reader.readAsText(file);
     }
 
-    // Upload and process PDF receipt
+    // Upload and process one or more PDF receipts
     async uploadReceipt(event) {
-        const file = event.target.files[0];
-        if (!file) {
-            return;
+        const files = Array.from(event.target.files || []);
+
+        for (const file of files) {
+            await this.processReceiptFile(file);
         }
 
+        event.target.value = '';
+    }
+
+    // Parse a single PDF receipt and apply its gift card transactions
+    async processReceiptFile(file) {
         // Check if it's a PDF
         if (file.type !== 'application/pdf') {
             alert(i18n.t('receipt.parse_error'));
-            event.target.value = '';
             return;
         }
 
@@ -1283,7 +1288,6 @@ class GiftCardManager {
 
             if (transactions.length === 0) {
                 alert(i18n.t('receipt.no_transactions'));
-                event.target.value = '';
                 return;
             }
 
@@ -1340,9 +1344,6 @@ class GiftCardManager {
         } catch (error) {
             console.error('Receipt processing error:', error);
             alert(i18n.t('receipt.error', { error: error.message }));
-        } finally {
-            // Reset file input
-            event.target.value = '';
         }
     }
 
