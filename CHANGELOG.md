@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.0](https://github.com/sunix/gift-card/compare/gift-card-v2.4.0...gift-card-v2.5.0) (2026-08-04)
+
+
+### Features
+
+* **receipt:** allow selecting multiple PDF receipts at once ([#99](https://github.com/sunix/gift-card/issues/99)) ([357e36f](https://github.com/sunix/gift-card/commit/357e36fbb2bd591a0ab4b77c5c6c1ba5b0cee44c))
+
 ## [2.4.0](https://github.com/sunix/gift-card/compare/gift-card-v2.3.1...gift-card-v2.4.0) (2026-08-04)
 
 
