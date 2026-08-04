@@ -57,6 +57,15 @@
   "export.import_button": "📤 Import Data",
   "export.description": "Export your data as a backup or import previously exported data.",
   
+  "receipt.upload_button": "📄 Upload Receipt (PDF)",
+  "receipt.description": "Upload a PDF receipt to automatically extract and add transactions to your gift cards.",
+  "receipt.processing": "Processing PDF receipt...",
+  "receipt.success": "Successfully added {count} transaction(s) from receipt",
+  "receipt.no_transactions": "No gift card transactions found in the receipt",
+  "receipt.card_not_found": "Gift card {number} not found in your cards. Please add it first.",
+  "receipt.parse_error": "Failed to parse PDF. Please make sure it's a valid receipt.",
+  "receipt.error": "Error processing receipt: {error}",
+  
   "card.fidelity_badge": "Fidelity Card",
   "card.drag_to_reorder": "Drag to reorder",
   "card.current_balance": "Current Balance:",

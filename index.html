@@ -322,8 +322,11 @@
                     <button id="exportBtn" class="btn btn-secondary" data-i18n="export.export_button">📥 Export All Data</button>
                     <button id="importBtn" class="btn btn-secondary" data-i18n="export.import_button">📤 Import Data</button>
                     <input type="file" id="importFile" accept=".json" style="display: none;">
+                    <button id="uploadReceiptBtn" class="btn btn-secondary" data-i18n="receipt.upload_button">📄 Upload Receipt (PDF)</button>
+                    <input type="file" id="receiptFile" accept=".pdf" style="display: none;">
                 </div>
                 <p style="margin-top: 10px; font-size: 0.9rem; color: #666;" data-i18n="export.description">Export your data as a backup or import previously exported data.</p>
+                <p style="margin-top: 5px; font-size: 0.9rem; color: #666;" data-i18n="receipt.description">Upload a PDF receipt to automatically extract and add transactions to your gift cards.</p>
             </section>
 
             <!-- Card Detail Modal -->
@@ -446,6 +449,8 @@
     </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bwip-js@3/dist/bwip-js.min.js"></script>
+<!-- PDF.js library for PDF parsing (version must match GiftCardManager.PDFJS_VERSION in app.js) -->
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script src="i18n.js"></script>
 <script src="barcode.js"></script>
 <script src="app.js"></script>

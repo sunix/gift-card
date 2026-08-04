@@ -2,6 +2,7 @@
 class GiftCardManager {
     // Constants
     static DEFAULT_ARCHIVED_STATE = false;
+    static PDFJS_VERSION = '3.11.174';
     
     constructor() {
         this.cards = this.loadCards();
@@ -205,6 +206,16 @@ class GiftCardManager {
                 this.updateBarcodeImportStatus(i18n.t('form.barcode_scan_cancelled'), 'info');
             });
         }
+
+        // Upload receipt button
+        document.getElementById('uploadReceiptBtn').addEventListener('click', () => {
+            document.getElementById('receiptFile').click();
+        });
+
+        // Receipt file input
+        document.getElementById('receiptFile').addEventListener('change', (e) => {
+            this.uploadReceipt(e);
+        });
 
         // Modal close button
         document.querySelector('.close').addEventListener('click', () => {
@@ -1227,6 +1238,207 @@ class GiftCardManager {
         };
         
         reader.readAsText(file);
+    }
+
+    // Upload and process PDF receipt
+    async uploadReceipt(event) {
+        const file = event.target.files[0];
+        if (!file) {
+            return;
+        }
+
+        // Check if it's a PDF
+        if (file.type !== 'application/pdf') {
+            alert(i18n.t('receipt.parse_error'));
+            event.target.value = '';
+            return;
+        }
+
+        try {
+            // Show processing message
+            const processingMsg = i18n.t('receipt.processing');
+            console.log(processingMsg);
+
+            // Read the PDF file
+            const arrayBuffer = await file.arrayBuffer();
+            
+            // Configure PDF.js worker
+            if (typeof pdfjsLib !== 'undefined') {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${GiftCardManager.PDFJS_VERSION}/build/pdf.worker.min.js`;
+            }
+
+            // Load the PDF document
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            
+            // Extract text from all pages
+            let fullText = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                fullText += this.groupTextItemsIntoLines(textContent.items).join('\n') + '\n';
+            }
+
+            // Extract transactions from the text
+            const transactions = this.extractTransactionsFromReceipt(fullText);
+
+            if (transactions.length === 0) {
+                alert(i18n.t('receipt.no_transactions'));
+                event.target.value = '';
+                return;
+            }
+
+            // Process each transaction
+            let addedCount = 0;
+            const notFoundCards = [];
+
+            for (const transaction of transactions) {
+                const card = this.cards.find(c => c.number === transaction.cardNumber);
+                
+                if (!card) {
+                    notFoundCards.push(transaction.cardNumber);
+                    continue;
+                }
+
+                // Check if this is a fidelity card
+                if (this.isFidelityCard(card)) {
+                    console.log(`Skipping transaction for fidelity card ${card.number}`);
+                    continue;
+                }
+
+                // Check if transaction would exceed balance
+                if (card.currentBalance < transaction.amount) {
+                    console.log(`Transaction amount ${transaction.amount} exceeds balance ${card.currentBalance} for card ${card.number}`);
+                    continue;
+                }
+
+                // Add the transaction
+                const newBalance = card.currentBalance - transaction.amount;
+                card.transactions.push({
+                    date: new Date().toISOString(),
+                    amount: transaction.amount,
+                    type: 'expense',
+                    balanceAfter: newBalance,
+                    description: transaction.description || 'Receipt transaction'
+                });
+                card.currentBalance = newBalance;
+                addedCount++;
+            }
+
+            // Save and re-render if any transactions were added
+            if (addedCount > 0) {
+                this.saveCards();
+                this.renderCards();
+                alert(i18n.t('receipt.success', { count: addedCount }));
+            } else if (notFoundCards.length > 0) {
+                // Show which cards were not found
+                const cardsList = notFoundCards.join(', ');
+                alert(i18n.t('receipt.card_not_found', { number: cardsList }));
+            } else {
+                alert(i18n.t('receipt.no_transactions'));
+            }
+
+        } catch (error) {
+            console.error('Receipt processing error:', error);
+            alert(i18n.t('receipt.error', { error: error.message }));
+        } finally {
+            // Reset file input
+            event.target.value = '';
+        }
+    }
+
+    // Group PDF.js text items into lines using their vertical position.
+    // PDF.js text items carry no newline information, so items must be
+    // grouped by y-coordinate (item.transform[5]) to reconstruct the
+    // visual lines of the receipt; otherwise an entire page collapses
+    // into a single line and line-based parsing below cannot work.
+    groupTextItemsIntoLines(items) {
+        const Y_TOLERANCE = 2;
+        const lines = [];
+        let currentLine = [];
+        let currentY = null;
+
+        for (const item of items) {
+            const y = item.transform[5];
+            if (currentY === null || Math.abs(y - currentY) <= Y_TOLERANCE) {
+                currentLine.push(item.str);
+                if (currentY === null) currentY = y;
+            } else {
+                lines.push(currentLine.join(' '));
+                currentLine = [item.str];
+                currentY = y;
+            }
+        }
+        if (currentLine.length > 0) {
+            lines.push(currentLine.join(' '));
+        }
+
+        return lines;
+    }
+
+    // Extract gift card transactions from receipt text
+    extractTransactionsFromReceipt(text) {
+        const transactions = [];
+        const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+        const MAX_LINES_TO_SEARCH_FOR_CARD = 4;
+
+        const giftCardPattern = /(?:CARTE[ \t]+CADEAU(?:[ \t]+U)?|GIFT[ \t]+CARD)(?:[ \t]+(\d+(?:[ \t]\d+)*[.,]\d{2})[ \t]*€)?/i;
+        const cardPattern = /(?:N°|NO|N)[ \t]*:[ \t]*(\d{10,20})|Card[ \t]*:[ \t]*(\d{10,20})|Carte[ \t]*:[ \t]*(\d{10,20})/i;
+        const standaloneAmountPattern = /^(\d+(?:[ \t]\d+)*[.,]\d{2})[ \t]*€$/;
+
+        // Cards whose amounts appear on later lines, matched in FIFO order
+        const pendingCards = [];
+
+        let i = 0;
+        while (i < lines.length) {
+            const line = lines[i];
+
+            // If cards are waiting for their amounts, try to match this line as a standalone amount
+            if (pendingCards.length > 0) {
+                const amountMatch = standaloneAmountPattern.exec(line);
+                if (amountMatch) {
+                    const amount = parseFloat(amountMatch[1].replace(/[ \t]/g, '').replace(',', '.'));
+                    if (amount > 0) {
+                        const pending = pendingCards.shift();
+                        transactions.push({ cardNumber: pending.cardNumber, amount, description: pending.description });
+                        i++;
+                        continue;
+                    }
+                }
+            }
+
+            const match = giftCardPattern.exec(line);
+            if (match) {
+                let description = 'Receipt transaction';
+                const storeMatch = line.match(/CARTE[ \t]+CADEAU[ \t]+([A-Za-z]+)/i);
+                if (storeMatch) description = `Receipt transaction (${storeMatch[1]})`;
+
+                // Find card number in the next few lines (stop at another gift card trigger)
+                let cardNumber = null;
+                for (let j = i + 1; j < Math.min(i + 1 + MAX_LINES_TO_SEARCH_FOR_CARD, lines.length); j++) {
+                    if (giftCardPattern.test(lines[j])) break;
+                    const cardMatch = cardPattern.exec(lines[j]);
+                    if (cardMatch) {
+                        cardNumber = cardMatch[1] || cardMatch[2] || cardMatch[3];
+                        break;
+                    }
+                }
+
+                if (cardNumber) {
+                    if (match[1]) {
+                        // Amount on same line — record immediately
+                        const amount = parseFloat(match[1].replace(/[ \t]/g, '').replace(',', '.'));
+                        if (amount > 0) transactions.push({ cardNumber, amount, description });
+                    } else {
+                        // Amount on a later line — queue in FIFO order
+                        pendingCards.push({ cardNumber, description });
+                    }
+                }
+            }
+            
+            i++;
+        }
+        
+        return transactions;
     }
 
     // Close modal
