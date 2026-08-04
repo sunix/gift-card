@@ -1240,33 +1240,43 @@ class GiftCardManager {
         reader.readAsText(file);
     }
 
-    // Upload and process one or more PDF receipts
+    // Upload and process one or more PDF receipts, showing a single summary at the end
     async uploadReceipt(event) {
         const files = Array.from(event.target.files || []);
 
+        const results = [];
         for (const file of files) {
-            await this.processReceiptFile(file);
+            results.push(await this.processReceiptFile(file));
         }
 
         event.target.value = '';
-    }
 
-    // Parse a single PDF receipt and apply its gift card transactions
-    async processReceiptFile(file) {
-        // Check if it's a PDF
-        if (file.type !== 'application/pdf') {
-            alert(i18n.t('receipt.parse_error'));
+        if (results.length === 0) {
             return;
         }
 
-        try {
-            // Show processing message
-            const processingMsg = i18n.t('receipt.processing');
-            console.log(processingMsg);
+        const totalAdded = results.reduce((sum, r) => sum + (r.addedCount || 0), 0);
+        if (totalAdded > 0) {
+            this.saveCards();
+            this.renderCards();
+        }
 
+        alert(this.buildReceiptSummary(results));
+    }
+
+    // Parse a single PDF receipt and apply its gift card transactions.
+    // Returns a result descriptor instead of alerting directly, so uploadReceipt
+    // can combine the outcome of every selected file into one summary popup.
+    async processReceiptFile(file) {
+        // Check if it's a PDF
+        if (file.type !== 'application/pdf') {
+            return { fileName: file.name, status: 'invalid_type' };
+        }
+
+        try {
             // Read the PDF file
             const arrayBuffer = await file.arrayBuffer();
-            
+
             // Configure PDF.js worker
             if (typeof pdfjsLib !== 'undefined') {
                 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${GiftCardManager.PDFJS_VERSION}/build/pdf.worker.min.js`;
@@ -1274,7 +1284,7 @@ class GiftCardManager {
 
             // Load the PDF document
             const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-            
+
             // Extract text from all pages
             let fullText = '';
             for (let i = 1; i <= pdf.numPages; i++) {
@@ -1287,9 +1297,13 @@ class GiftCardManager {
             const transactions = this.extractTransactionsFromReceipt(fullText);
 
             if (transactions.length === 0) {
-                alert(i18n.t('receipt.no_transactions'));
-                return;
+                return { fileName: file.name, status: 'no_transactions' };
             }
+
+            // The receipt's own date/time (when printed), reused for every
+            // transaction found on it instead of the upload time
+            const receiptDate = this.extractReceiptDate(fullText);
+            const transactionDate = (receiptDate || new Date()).toISOString();
 
             // Process each transaction
             let addedCount = 0;
@@ -1297,7 +1311,7 @@ class GiftCardManager {
 
             for (const transaction of transactions) {
                 const card = this.cards.find(c => c.number === transaction.cardNumber);
-                
+
                 if (!card) {
                     notFoundCards.push(transaction.cardNumber);
                     continue;
@@ -1318,7 +1332,7 @@ class GiftCardManager {
                 // Add the transaction
                 const newBalance = card.currentBalance - transaction.amount;
                 card.transactions.push({
-                    date: new Date().toISOString(),
+                    date: transactionDate,
                     amount: transaction.amount,
                     type: 'expense',
                     balanceAfter: newBalance,
@@ -1328,23 +1342,58 @@ class GiftCardManager {
                 addedCount++;
             }
 
-            // Save and re-render if any transactions were added
-            if (addedCount > 0) {
-                this.saveCards();
-                this.renderCards();
-                alert(i18n.t('receipt.success', { count: addedCount }));
-            } else if (notFoundCards.length > 0) {
-                // Show which cards were not found
-                const cardsList = notFoundCards.join(', ');
-                alert(i18n.t('receipt.card_not_found', { number: cardsList }));
-            } else {
-                alert(i18n.t('receipt.no_transactions'));
-            }
-
+            return { fileName: file.name, status: 'ok', addedCount, notFoundCards };
         } catch (error) {
-            console.error('Receipt processing error:', error);
-            alert(i18n.t('receipt.error', { error: error.message }));
+            console.error(`Receipt processing error for ${file.name}:`, error);
+            return { fileName: file.name, status: 'error', error: error.message };
         }
+    }
+
+    // Find the receipt's own "DD/MM/YY HH:MM:SS" print timestamp (as printed by the
+    // store's POS system, e.g. "05/07/26 11:00:26") and turn it into a Date.
+    // Returns null when no such timestamp is found, so callers can fall back to now.
+    extractReceiptDate(text) {
+        const dateTimePattern = /(\d{2})\/(\d{2})\/(\d{2})[ \t]+(\d{2}):(\d{2}):(\d{2})/;
+        const match = dateTimePattern.exec(text);
+        if (!match) {
+            return null;
+        }
+
+        const [, day, month, year, hour, minute, second] = match.map(Number);
+        const date = new Date(2000 + year, month - 1, day, hour, minute, second);
+
+        return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    // Combine the per-file results of uploadReceipt into a single summary message
+    buildReceiptSummary(results) {
+        const lines = [];
+
+        const totalAdded = results.reduce((sum, r) => sum + (r.addedCount || 0), 0);
+        if (totalAdded > 0) {
+            lines.push(i18n.t('receipt.success', { count: totalAdded }));
+        }
+
+        const notFoundCards = [...new Set(results.flatMap(r => r.notFoundCards || []))];
+        if (notFoundCards.length > 0) {
+            lines.push(i18n.t('receipt.card_not_found', { number: notFoundCards.join(', ') }));
+        }
+
+        for (const result of results) {
+            if (result.status === 'no_transactions') {
+                lines.push(i18n.t('receipt.file_no_transactions', { file: result.fileName }));
+            } else if (result.status === 'invalid_type') {
+                lines.push(i18n.t('receipt.file_parse_error', { file: result.fileName }));
+            } else if (result.status === 'error') {
+                lines.push(i18n.t('receipt.file_error', { file: result.fileName, error: result.error }));
+            }
+        }
+
+        if (lines.length === 0) {
+            lines.push(i18n.t('receipt.no_transactions'));
+        }
+
+        return lines.join('\n');
     }
 
     // Group PDF.js text items into lines using their vertical position.

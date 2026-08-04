@@ -59,12 +59,14 @@
   
   "receipt.upload_button": "📄 Upload Receipt (PDF)",
   "receipt.description": "Upload one or more PDF receipts to automatically extract and add transactions to your gift cards.",
-  "receipt.processing": "Processing PDF receipt...",
-  "receipt.success": "Successfully added {count} transaction(s) from receipt",
+  "receipt.success": "Successfully added {count} transaction(s)",
   "receipt.no_transactions": "No gift card transactions found in the receipt",
   "receipt.card_not_found": "Gift card {number} not found in your cards. Please add it first.",
   "receipt.parse_error": "Failed to parse PDF. Please make sure it's a valid receipt.",
   "receipt.error": "Error processing receipt: {error}",
+  "receipt.file_no_transactions": "{file}: no gift card transaction found",
+  "receipt.file_parse_error": "{file}: failed to parse. Please make sure it's a valid PDF receipt.",
+  "receipt.file_error": "{file}: {error}",
   
   "card.fidelity_badge": "Fidelity Card",
   "card.drag_to_reorder": "Drag to reorder",
