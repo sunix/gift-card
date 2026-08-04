@@ -49,7 +49,13 @@ const i18nMock = {
             'form.barcode_image_processing': 'Reading barcode from picture…',
             'form.barcode_import_success': 'Barcode imported. Detected format: {format}.',
             'form.barcode_scan_cancelled': 'Barcode scan cancelled.',
-            'form.barcode_camera_ready': 'Point your camera at the barcode.'
+            'form.barcode_camera_ready': 'Point your camera at the barcode.',
+            'receipt.success': 'Successfully added {count} transaction(s)',
+            'receipt.no_transactions': 'No gift card transactions found in the receipt',
+            'receipt.card_not_found': 'Gift card {number} not found in your cards. Please add it first.',
+            'receipt.file_no_transactions': '{file}: no gift card transaction found',
+            'receipt.file_parse_error': '{file}: failed to parse. Please make sure it\'s a valid PDF receipt.',
+            'receipt.file_error': '{file}: {error}'
         };
         let msg = translations[key] || key;
         if (params) {
@@ -1431,6 +1437,58 @@ N°: 6363000044445555666
             expect(transactions).toHaveLength(1);
             expect(transactions[0].cardNumber).toBe('6363357051132315589');
             expect(transactions[0].amount).toBe(11.26);
+        });
+    });
+
+    describe('extractReceiptDate', () => {
+        test('should parse the receipt\'s DD/MM/YY HH:MM:SS print timestamp', () => {
+            const receiptText = `
+Date   Heure   Magasin   Tpv   Util   Tick
+05/07/26   11:00:26   24162   005   115   57866
+            `;
+
+            const manager = new GiftCardManager();
+            const date = manager.extractReceiptDate(receiptText);
+
+            expect(date).not.toBeNull();
+            expect(date.getFullYear()).toBe(2026);
+            expect(date.getMonth()).toBe(6); // July (0-indexed)
+            expect(date.getDate()).toBe(5);
+            expect(date.getHours()).toBe(11);
+            expect(date.getMinutes()).toBe(0);
+            expect(date.getSeconds()).toBe(26);
+        });
+
+        test('should return null when no timestamp is found', () => {
+            const manager = new GiftCardManager();
+            expect(manager.extractReceiptDate('no date here')).toBeNull();
+        });
+    });
+
+    describe('buildReceiptSummary', () => {
+        test('should combine successes, missing cards and per-file issues into one message', () => {
+            const manager = new GiftCardManager();
+            const summary = manager.buildReceiptSummary([
+                { fileName: 'ticket1.pdf', status: 'ok', addedCount: 1, notFoundCards: [] },
+                { fileName: 'ticket2.pdf', status: 'ok', addedCount: 1, notFoundCards: ['6363000011112222333'] },
+                { fileName: 'ticket3.pdf', status: 'no_transactions' },
+                { fileName: 'notes.pdf', status: 'invalid_type' },
+                { fileName: 'corrupt.pdf', status: 'error', error: 'Invalid PDF structure' },
+            ]);
+
+            expect(summary).toContain('Successfully added 2 transaction(s)');
+            expect(summary).toContain('6363000011112222333');
+            expect(summary).toContain('ticket3.pdf');
+            expect(summary).toContain('notes.pdf');
+            expect(summary).toContain('corrupt.pdf');
+            expect(summary).toContain('Invalid PDF structure');
+        });
+
+        test('should fall back to the generic no-transactions message when nothing to report', () => {
+            const manager = new GiftCardManager();
+            const summary = manager.buildReceiptSummary([]);
+
+            expect(summary).toBe('No gift card transactions found in the receipt');
         });
     });
 });
