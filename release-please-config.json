@@ -7,9 +7,7 @@
       "extra-files": [
         {
           "type": "generic",
-          "path": "sw.js",
-          "search-regex": "const CACHE_NAME = 'gift-card-manager-v[0-9]+\\.[0-9]+\\.[0-9]+'",
-          "replace": "const CACHE_NAME = 'gift-card-manager-v${version}'"
+          "path": "sw.js"
         }
       ]
     }
