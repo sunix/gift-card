@@ -1210,4 +1210,227 @@ describe('GiftCardManager', () => {
             expect(manager.isCardExpiringSoon(card)).toBe(false);
         });
     });
+
+    describe('extractTransactionsFromReceipt', () => {
+        test('should extract transaction from Super U receipt format', () => {
+            const receiptText = `
+                MAGASINS U
+                CARTE CADEAU U 15,93 €
+                N°: 6363123456789012
+                Date: 2024-01-15
+            `;
+
+            const transactions = manager.extractTransactionsFromReceipt(receiptText);
+
+            expect(transactions).toHaveLength(1);
+            expect(transactions[0].cardNumber).toBe('6363123456789012');
+            expect(transactions[0].amount).toBe(15.93);
+            expect(transactions[0].description).toContain('U');
+        });
+
+        test('should extract transaction with decimal point format', () => {
+            const receiptText = `
+                Store Receipt
+                CARTE CADEAU U 25.50 €
+                N°: 1234567890123
+            `;
+
+            const transactions = manager.extractTransactionsFromReceipt(receiptText);
+
+            expect(transactions).toHaveLength(1);
+            expect(transactions[0].cardNumber).toBe('1234567890123');
+            expect(transactions[0].amount).toBe(25.50);
+        });
+
+        test('should extract multiple transactions from same receipt', () => {
+            const receiptText = `
+                Store Receipt
+                CARTE CADEAU U 15,00 €
+                N°: 1111111111111
+                
+                CARTE CADEAU U 30,50 €
+                N°: 2222222222222
+            `;
+
+            const transactions = manager.extractTransactionsFromReceipt(receiptText);
+
+            expect(transactions).toHaveLength(2);
+            expect(transactions[0].cardNumber).toBe('1111111111111');
+            expect(transactions[0].amount).toBe(15.00);
+            expect(transactions[1].cardNumber).toBe('2222222222222');
+            expect(transactions[1].amount).toBe(30.50);
+        });
+
+        test('should handle receipt with no gift card transactions', () => {
+            const receiptText = `
+                Store Receipt
+                Regular Items
+                Total: 25.00 €
+                Thank you!
+            `;
+
+            const transactions = manager.extractTransactionsFromReceipt(receiptText);
+
+            expect(transactions).toHaveLength(0);
+        });
+
+        test('should handle card number with Card: prefix', () => {
+            const receiptText = `
+                GIFT CARD 10.00 €
+                Card: 9876543210987
+            `;
+
+            const transactions = manager.extractTransactionsFromReceipt(receiptText);
+
+            expect(transactions).toHaveLength(1);
+            expect(transactions[0].cardNumber).toBe('9876543210987');
+            expect(transactions[0].amount).toBe(10.00);
+        });
+
+        test('should handle card number with NO: prefix (letter O)', () => {
+            const receiptText = `
+                CARTE CADEAU U 12,50 €
+                NO: 5555555555555
+            `;
+
+            const transactions = manager.extractTransactionsFromReceipt(receiptText);
+
+            expect(transactions).toHaveLength(1);
+            expect(transactions[0].cardNumber).toBe('5555555555555');
+            expect(transactions[0].amount).toBe(12.50);
+        });
+
+        test('should ignore transactions without card number', () => {
+            const receiptText = `
+                CARTE CADEAU U 15.00 €
+                No card number here
+            `;
+
+            const transactions = manager.extractTransactionsFromReceipt(receiptText);
+
+            expect(transactions).toHaveLength(0);
+        });
+
+        test('should ignore transactions without amount', () => {
+            const receiptText = `
+                CARTE CADEAU
+                N°: 1234567890123
+            `;
+
+            const transactions = manager.extractTransactionsFromReceipt(receiptText);
+
+            expect(transactions).toHaveLength(0);
+        });
+
+        test('should handle amounts with spaces in them', () => {
+            const receiptText = `
+                CARTE CADEAU U 1 5,93 €
+                N°: 6363123456789012
+            `;
+
+            const transactions = manager.extractTransactionsFromReceipt(receiptText);
+
+            expect(transactions).toHaveLength(1);
+            expect(transactions[0].cardNumber).toBe('6363123456789012');
+            expect(transactions[0].amount).toBe(15.93);
+        });
+
+        test('should handle amount on a separate line after card number', () => {
+            // Real Super U receipt format: amount appears on its own line after the card number
+            const receiptText = `
+CARTE CADEAU U
+N°: 6363000011112222333
+
+34,43 €
+            `;
+
+            const transactions = manager.extractTransactionsFromReceipt(receiptText);
+
+            expect(transactions).toHaveLength(1);
+            expect(transactions[0].cardNumber).toBe('6363000011112222333');
+            expect(transactions[0].amount).toBe(34.43);
+        });
+
+        test('should extract multiple transactions when amounts are grouped after all card entries', () => {
+            // Super U receipt format with 2 cards: all card entries listed first, amounts follow in order
+            const receiptText = `
+CARTE CADEAU U
+N°: 6363000011112222333
+CARTE CADEAU U
+N°: 6363000044445555666
+
+6,17 €
+19,20 €
+            `;
+
+            const transactions = manager.extractTransactionsFromReceipt(receiptText);
+
+            expect(transactions).toHaveLength(2);
+            expect(transactions[0].cardNumber).toBe('6363000011112222333');
+            expect(transactions[0].amount).toBe(6.17);
+            expect(transactions[1].cardNumber).toBe('6363000044445555666');
+            expect(transactions[1].amount).toBe(19.20);
+        });
+    });
+
+    describe('groupTextItemsIntoLines', () => {
+        test('should group PDF.js text items into lines by vertical position', () => {
+            // PDF.js text items carry no newline info; items on the same line
+            // share the same y-coordinate (transform[5]), while items on
+            // different lines have a different y-coordinate.
+            const items = [
+                { str: 'CARTE', transform: [1, 0, 0, 1, 25, 100] },
+                { str: 'CADEAU', transform: [1, 0, 0, 1, 60, 100] },
+                { str: 'U', transform: [1, 0, 0, 1, 100, 100] },
+                { str: '11,26', transform: [1, 0, 0, 1, 120, 100] },
+                { str: '€', transform: [1, 0, 0, 1, 160, 100] },
+                { str: 'N°:', transform: [1, 0, 0, 1, 25, 85] },
+                { str: '6363357051132315589', transform: [1, 0, 0, 1, 60, 85] },
+            ];
+
+            const manager = new GiftCardManager();
+            const lines = manager.groupTextItemsIntoLines(items);
+
+            expect(lines).toEqual([
+                'CARTE CADEAU U 11,26 €',
+                'N°: 6363357051132315589',
+            ]);
+        });
+
+        test('should extract a transaction from PDF.js items reconstructed as separate lines', () => {
+            // Regression test: previously all items on a page were joined with a
+            // single space and no newline was inserted between visual lines,
+            // collapsing the whole receipt into one line and breaking the
+            // "search next lines for the card number" logic in
+            // extractTransactionsFromReceipt.
+            const items = [
+                { str: 'PAIEMENT', transform: [1, 0, 0, 1, 25, 200] },
+                { str: '€', transform: [1, 0, 0, 1, 80, 200] },
+                { str: 'CARTE', transform: [1, 0, 0, 1, 100, 200] },
+                { str: 'U', transform: [1, 0, 0, 1, 140, 200] },
+                { str: '0,44', transform: [1, 0, 0, 1, 160, 200] },
+                { str: '€', transform: [1, 0, 0, 1, 200, 200] },
+                { str: 'CARTE', transform: [1, 0, 0, 1, 25, 185] },
+                { str: 'CADEAU', transform: [1, 0, 0, 1, 65, 185] },
+                { str: 'U', transform: [1, 0, 0, 1, 110, 185] },
+                { str: '11,26', transform: [1, 0, 0, 1, 130, 185] },
+                { str: '€', transform: [1, 0, 0, 1, 170, 185] },
+                { str: 'N°:', transform: [1, 0, 0, 1, 25, 170] },
+                { str: '6363357051132315589', transform: [1, 0, 0, 1, 60, 170] },
+                { str: 'CB', transform: [1, 0, 0, 1, 25, 155] },
+                { str: 'SANS', transform: [1, 0, 0, 1, 60, 155] },
+                { str: 'CONTACT', transform: [1, 0, 0, 1, 100, 155] },
+                { str: '17,92', transform: [1, 0, 0, 1, 160, 155] },
+                { str: '€', transform: [1, 0, 0, 1, 200, 155] },
+            ];
+
+            const manager = new GiftCardManager();
+            const text = manager.groupTextItemsIntoLines(items).join('\n');
+            const transactions = manager.extractTransactionsFromReceipt(text);
+
+            expect(transactions).toHaveLength(1);
+            expect(transactions[0].cardNumber).toBe('6363357051132315589');
+            expect(transactions[0].amount).toBe(11.26);
+        });
+    });
 });

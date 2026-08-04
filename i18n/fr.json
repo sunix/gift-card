@@ -57,6 +57,15 @@
   "export.import_button": "📤 Importer des Données",
   "export.description": "Exportez vos données en tant que sauvegarde ou importez des données précédemment exportées.",
   
+  "receipt.upload_button": "📄 Télécharger Ticket (PDF)",
+  "receipt.description": "Téléchargez un ticket PDF pour extraire et ajouter automatiquement les transactions à vos cartes cadeaux.",
+  "receipt.processing": "Traitement du ticket PDF...",
+  "receipt.success": "Ajout réussi de {count} transaction(s) depuis le ticket",
+  "receipt.no_transactions": "Aucune transaction de carte cadeau trouvée dans le ticket",
+  "receipt.card_not_found": "Carte cadeau {number} non trouvée dans vos cartes. Veuillez d'abord l'ajouter.",
+  "receipt.parse_error": "Échec de l'analyse du PDF. Assurez-vous qu'il s'agit d'un ticket valide.",
+  "receipt.error": "Erreur lors du traitement du ticket : {error}",
+  
   "card.fidelity_badge": "Carte de Fidélité",
   "card.drag_to_reorder": "Glisser pour réorganiser",
   "card.current_balance": "Solde Actuel :",
