@@ -535,6 +535,9 @@ class ShoppingListManager {
             video.srcObject = stream;
             await video.play();
             scannerDiv.style.display = 'block';
+            if (typeof scannerDiv.scrollIntoView === 'function') {
+                scannerDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
             this.updateScanStatus(i18n.t('form.barcode_camera_ready'), 'info');
             this.isScanningBarcodeFrame = true;
             this.scanItemBarcodeFrame(video);
