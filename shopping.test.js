@@ -1258,6 +1258,30 @@ describe('ShoppingListManager', () => {
             expect(manager.startItemBarcodeScan).toHaveBeenCalledWith(list.id, item.id);
         });
 
+        test('starting the camera scan scrolls the scanner into view so it is not hidden below the item list', async () => {
+            setupListDetailDOM();
+            const list = manager.createList('Weekly', '', null);
+            const item = manager.addItem(list.id, 'Milk', '');
+
+            global.BarcodeDetector = function () {};
+            const fakeStream = { getTracks: () => [] };
+            global.navigator.mediaDevices = { getUserMedia: jest.fn().mockResolvedValue(fakeStream) };
+            HTMLMediaElement.prototype.play = jest.fn().mockResolvedValue(undefined);
+            const scrollIntoViewMock = jest.fn();
+            Element.prototype.scrollIntoView = scrollIntoViewMock;
+
+            manager.renderListDetail(list.id);
+
+            await manager.startItemBarcodeScan(list.id, item.id);
+
+            const scannerDiv = document.getElementById('itemBarcodeScanner');
+            expect(scannerDiv.style.display).toBe('block');
+            expect(scrollIntoViewMock).toHaveBeenCalledWith(expect.objectContaining({ block: 'center' }));
+
+            delete global.BarcodeDetector;
+            delete Element.prototype.scrollIntoView;
+        });
+
         test('drag and drop reorders shopping list items', () => {
             setupListDetailDOM();
             const list = manager.createList('Weekly', '', null);
