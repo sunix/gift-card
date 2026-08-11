@@ -3,9 +3,16 @@ name: Lint Commit Messages
 on:
   pull_request:
     types: [opened, synchronize, reopened, edited]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
 
 jobs:
-  commitlint:
+  pr-title:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,3 +23,29 @@ jobs:
         uses: amannn/action-semantic-pull-request@v5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  main-commit-message:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check merged commit message follows Conventional Commits
+        env:
+          MESSAGE: ${{ github.event.head_commit.message }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          message="${MESSAGE}"
+          first_line="${message%%$'\n'*}"
+
+          if [[ -z "$first_line" ]]; then
+            echo "Merged commit message is empty; use a Conventional Commit message."
+            exit 1
+          fi
+
+          pattern='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([[:alnum:]_.-]+\))?(!)?: .+'
+          if [[ ! "$first_line" =~ $pattern ]]; then
+            echo "Merged commit message must follow Conventional Commits."
+            echo "Got: $first_line"
+            echo "Use squash merge with a conventional PR title (e.g. fix(ci): ...)."
+            exit 1
+          fi
