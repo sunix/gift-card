@@ -38,6 +38,7 @@ feat!: replace localStorage with IndexedDB (BREAKING CHANGE)
 ### Enforcement
 
 A GitHub Actions workflow (`.github/workflows/commitlint.yml`) checks that every PR title follows this convention. PRs with non-conforming titles will fail the check.
+When squashing commits before merge, the resulting commit message comes from the PR title, so the PR title must be conventional.
 
 ## Release Process
 
